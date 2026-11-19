@@ -1,0 +1,6 @@
+# Keep secrets and local config out of the indexed repo
+.env
+.env.*
+*.pem
+*.key
+.claude/settings.local.json
