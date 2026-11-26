@@ -20,7 +20,7 @@ Every Acme Cloud service is written in Python **3.11** or later and uses the **s
 - Classes – `PascalCase`.
 - Constants – `UPPER_SNAKE_CASE`.
 - Test files – `test_<module>.py`, and test methods `test_<behaviour>`.
-- Documentation files – kebab-case, for example `account-lifecycle.md`.
+- Documentation files – kebab-case, for example `services/accounts/docs/account-lifecycle.md`.
 - Alerts – `PascalCase` starting with the service or component name, for example `BillingPaymentFailureRateHigh`.
 
 ## Are type hints and docstrings required?

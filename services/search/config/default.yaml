@@ -1,0 +1,126 @@
+# Default configuration for the Search service.
+# Values here must match the docs in services/search/docs/.
+# Secrets are never stored in this file: they are read from the environment
+# variables named in the *_env keys.
+
+service:
+  name: search
+  api_base_path: /v2/search
+  port: 8080
+  log_level: info
+  default_region: us-east
+
+query:
+  max_length_chars: 512          # longer queries return 400 invalid_query
+  max_terms: 32                  # words, phrases, wildcards and exclusions
+  max_filters: 10
+  min_prefix_length: 3           # characters required before a trailing *
+  timeout_ms: 5000               # then partial results or 504 search_timeout
+  return_partial_on_timeout: true
+
+results:
+  default_page_size: 25
+  max_page_size: 100
+  max_reachable_results: 10000   # deepest result a cursor can reach
+  snippet_length_chars: 160
+
+suggest:
+  min_prefix_length: 2
+  max_suggestions: 8
+  timeout_ms: 500
+
+ranking:
+  title_boost: 3.0               # title match counts 3x a content match
+  phrase_boost: 2.0
+  tf_saturation: 1.2             # score per term = tf / (tf + 1.2)
+  recency_half_life_days: 30
+  recency_floor: 0.5             # very old items keep 50% of their score
+
+analysis:
+  lowercase: true
+  remove_stop_words: true
+  stemming: simple_english
+  max_token_length: 64
+
+indexing:
+  batch_max_events: 500
+  batch_max_wait_ms: 2000
+  retry_max_attempts: 5
+  retry_backoff_initial_ms: 500
+  retry_backoff_max_ms: 30000
+  freshness_targets_seconds:     # p95 targets, alert when exceeded
+    project: 10
+    task: 10
+    file_name: 30
+    file_content: 300
+    deletion: 60
+  content:
+    extensions: [txt, md, csv, pdf, docx, xlsx, pptx]
+    max_file_size_mb: 100        # larger files are indexed by name only
+    max_extracted_text_mb: 10
+  reindex:
+    cooldown_hours: 24           # one rebuild per workspace per 24 hours
+    target_hours_per_million_documents: 4
+
+rate_limits:
+  ui_searches_per_member_per_minute: 30
+  # API searches count against the account-wide API limit of the plan,
+  # which is enforced by the API gateway, not by this service.
+  api_uses_account_limit: true
+
+plans:
+  free:
+    content_search: false
+    saved_searches_per_member: 5
+    api_access: false
+  starter:
+    content_search: false
+    saved_searches_per_member: 25
+    api_access: true
+  pro:
+    content_search: true
+    saved_searches_per_member: 50
+    api_access: true
+  business:
+    content_search: true
+    saved_searches_per_member: 100
+    api_access: true
+  enterprise:
+    content_search: true
+    saved_searches_per_member: 250
+    api_access: true
+
+saved_searches:
+  max_name_length_chars: 80
+
+feature_flags:
+  or_operator: true
+  prefix_wildcards: true
+  content_search: true
+  typo_tolerance: false          # not released; do not document as available
+  cross_workspace_search: false  # search covers one workspace at a time
+
+regions:
+  us-east:
+    enabled: true
+    index_cluster_host: search-index.us-east.internal.acme-cloud.example
+    shards: 12
+    replicas: 2
+    event_stream: search-changes-us-east
+  eu-central:
+    enabled: true
+    index_cluster_host: search-index.eu-central.internal.acme-cloud.example
+    shards: 6
+    replicas: 2
+    event_stream: search-changes-eu-central
+  ap-south:
+    enabled: true
+    index_cluster_host: search-index.ap-south.internal.acme-cloud.example
+    shards: 3
+    replicas: 2
+    event_stream: search-changes-ap-south
+
+credentials:
+  index_cluster_username_env: SEARCH_INDEX_USERNAME
+  index_cluster_password_env: SEARCH_INDEX_PASSWORD
+  event_stream_token_env: SEARCH_EVENT_STREAM_TOKEN

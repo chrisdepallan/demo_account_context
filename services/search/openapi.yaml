@@ -1,0 +1,462 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Search API
+  version: 2.0.0
+  description: >
+    Full-text search across the projects, tasks and files of a workspace.
+    Fictional API used as sample documentation. Requests count against the
+    account-wide API rate limit of the plan (300/min Starter, 1,000/min Pro,
+    3,000/min Business, 10,000/min Enterprise).
+  contact:
+    name: Search and Discovery
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: Query
+  - name: Saved searches
+  - name: Index
+paths:
+  /v2/search/{workspace_id}/query:
+    get:
+      operationId: runSearch
+      tags: [Query]
+      summary: Run a search
+      description: >
+        Returns the items in the workspace that match the query and that the
+        caller may see. Needs the `projects:read` scope for projects and
+        tasks and the `files:read` scope for files.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: q
+          in: query
+          required: true
+          description: Query string, up to 512 characters, 32 terms and 10 filters.
+          schema:
+            type: string
+            maxLength: 512
+          example: 'type:task assignee:me "launch plan" -draft'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, updated_at, created_at, title, due_date]
+            default: relevance
+        - name: order
+          in: query
+          description: Ignored when sort is `relevance`.
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: cursor
+          in: query
+          description: Value of `next_cursor` from the previous page.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching items, best first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/InvalidQuery'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '504':
+          description: No results were found within the 5 second timeout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: search_timeout
+                message: The search took longer than 5 seconds. Add filters to narrow it.
+  /v2/search/{workspace_id}/suggest:
+    get:
+      operationId: suggest
+      tags: [Query]
+      summary: Autocomplete suggestions
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: prefix
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 64
+          example: roa
+      responses:
+        '200':
+          description: Up to 8 suggestions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    maxItems: 8
+                    items:
+                      $ref: '#/components/schemas/Suggestion'
+              example:
+                suggestions:
+                  - text: Roadmap 2027
+                    type: project
+                    id: prj_4K7M2Q9X
+                  - text: roadshow-venues.xlsx
+                    type: file
+                    id: fil_9B3D6H1V
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /v2/search/{workspace_id}/saved-searches:
+    get:
+      operationId: listSavedSearches
+      tags: [Saved searches]
+      summary: List the caller's saved searches
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Saved searches of the calling member.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved_searches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SavedSearch'
+    post:
+      operationId: createSavedSearch
+      tags: [Saved searches]
+      summary: Save a search
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, query]
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                query:
+                  type: string
+                  maxLength: 512
+            example:
+              name: My open tasks
+              query: 'type:task assignee:me status:open'
+      responses:
+        '201':
+          description: Saved search created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+        '400':
+          $ref: '#/components/responses/InvalidQuery'
+        '409':
+          description: The member has reached the saved search limit of the plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: saved_search_limit_reached
+                message: The Pro plan allows 50 saved searches per member.
+  /v2/search/{workspace_id}/saved-searches/{saved_search_id}:
+    delete:
+      operationId: deleteSavedSearch
+      tags: [Saved searches]
+      summary: Delete a saved search
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: saved_search_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^srch_[A-Z0-9]{8}$'
+          example: srch_5T8W2N6C
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: No saved search with this ID belongs to the caller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: Saved search srch_5T8W2N6C was not found.
+  /v2/search/{workspace_id}/index-status:
+    get:
+      operationId: getIndexStatus
+      tags: [Index]
+      summary: Index health and lag
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Current state of the workspace index.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+  /v2/search/{workspace_id}/reindex:
+    post:
+      operationId: startReindex
+      tags: [Index]
+      summary: Rebuild the index
+      description: Owner and Admin only. Allowed once every 24 hours per workspace.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '202':
+          description: Rebuild started. Search keeps using the old index until it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+        '403':
+          description: The caller is not an Owner or Admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: forbidden
+                message: Only Owners and Admins can rebuild the index.
+        '429':
+          description: A rebuild was already started in the last 24 hours.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until a new rebuild is allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: reindex_cooldown
+                message: A rebuild can be started once every 24 hours.
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key starting with `acme_live_` (production) or `acme_test_` (sandbox).
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ws_[A-Z0-9]{6}$'
+      example: ws_4H8P2L
+  responses:
+    InvalidQuery:
+      description: The query breaks a syntax rule or a limit.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: invalid_query
+            message: 'type: ''folder'' is not one of project, task, file'
+    RateLimited:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: rate_limited
+            message: Too many requests. Retry after 12 seconds.
+  schemas:
+    SearchResponse:
+      type: object
+      required: [results, total, total_is_capped, partial]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        total:
+          type: integer
+          description: Number of matches, exact up to 10,000.
+          example: 2
+        total_is_capped:
+          type: boolean
+          example: false
+        partial:
+          type: boolean
+          description: True when the 5 second timeout cut the search short.
+          example: false
+        next_cursor:
+          type: string
+          nullable: true
+          example: null
+        took_ms:
+          type: integer
+          example: 42
+      example:
+        results:
+          - id: tsk_8G2K4M1P
+            type: task
+            title: Review launch plan with marketing
+            snippet: '...agree the final <em>launch plan</em> before the 1 December review...'
+            score: 7.42
+            project_id: prj_4K7M2Q9X
+            status: open
+            updated_at: '2026-11-25T16:04:11Z'
+          - id: fil_9B3D6H1V
+            type: file
+            title: launch-plan-v3.docx
+            snippet: '...the <em>launch plan</em> has three phases...'
+            score: 5.18
+            project_id: prj_4K7M2Q9X
+            status: null
+            updated_at: '2026-11-12T09:30:00Z'
+        total: 2
+        total_is_capped: false
+        partial: false
+        next_cursor: null
+        took_ms: 42
+    SearchResult:
+      type: object
+      required: [id, type, title, score, updated_at]
+      properties:
+        id:
+          type: string
+          description: Project (`prj_`), task (`tsk_`) or file (`fil_`) ID.
+          example: tsk_8G2K4M1P
+        type:
+          type: string
+          enum: [project, task, file]
+        title:
+          type: string
+          example: Review launch plan with marketing
+        snippet:
+          type: string
+          description: Matching text with the matched words wrapped in `<em>`.
+        score:
+          type: number
+          format: float
+          example: 7.42
+        project_id:
+          type: string
+          nullable: true
+          example: prj_4K7M2Q9X
+        status:
+          type: string
+          nullable: true
+          enum: [open, completed, archived, null]
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-11-25T16:04:11Z'
+    Suggestion:
+      type: object
+      properties:
+        text:
+          type: string
+          example: Roadmap 2027
+        type:
+          type: string
+          enum: [project, task, file]
+        id:
+          type: string
+          example: prj_4K7M2Q9X
+    SavedSearch:
+      type: object
+      required: [id, name, query, created_at]
+      properties:
+        id:
+          type: string
+          pattern: '^srch_[A-Z0-9]{8}$'
+          example: srch_5T8W2N6C
+        name:
+          type: string
+          maxLength: 80
+          example: My open tasks
+        query:
+          type: string
+          example: 'type:task assignee:me status:open'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-20T08:15:00Z'
+    IndexStatus:
+      type: object
+      required: [workspace_id, region, state, document_count, lag_seconds]
+      properties:
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        region:
+          type: string
+          enum: [us-east, eu-central, ap-south]
+          example: us-east
+        state:
+          type: string
+          enum: [healthy, lagging, rebuilding]
+          example: healthy
+        document_count:
+          type: integer
+          example: 18250
+        lag_seconds:
+          type: integer
+          description: Age of the oldest change not yet indexed.
+          example: 3
+        rebuild_progress_percent:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+          example: null
+        last_rebuild_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-10-02T03:10:00Z'
+        next_rebuild_allowed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: invalid_query
+        message:
+          type: string
+          example: query is longer than 512 characters

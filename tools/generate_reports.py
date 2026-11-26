@@ -49,7 +49,7 @@ SERVICES = [
     {"name": "auth", "title": "Auth", "team": "Identity", "channel": "#team-identity",
      "tier": 1, "p50": 46, "req_m": 890, "nouns": ["session", "API key", "SSO connection", "MFA enrolment"]},
     {"name": "billing", "title": "Billing", "team": "Revenue Engineering", "channel": "#team-billing",
-     "tier": 1, "p50": 72, "req_m": 95, "nouns": ["invoice", "subscription", "credit", "refund"]},
+     "tier": 2, "p50": 72, "req_m": 95, "nouns": ["invoice", "subscription", "credit", "refund"]},
     {"name": "support", "title": "Support", "team": "Customer Support", "channel": "#support-escalations",
      "tier": 3, "p50": 64, "req_m": 22, "nouns": ["ticket", "macro", "escalation", "SLA timer"]},
     {"name": "projects", "title": "Projects", "team": "Work Management", "channel": "#team-projects",
@@ -65,15 +65,15 @@ SERVICES = [
     {"name": "audit-log", "title": "Audit Log", "team": "Trust and Compliance", "channel": "#team-trust",
      "tier": 2, "p50": 58, "req_m": 130, "nouns": ["audit entry", "export", "stream", "retention policy"]},
     {"name": "integrations", "title": "Integrations", "team": "Ecosystem", "channel": "#team-ecosystem",
-     "tier": 3, "p50": 110, "req_m": 75, "nouns": ["integration", "install", "sync job", "OAuth grant"]},
+     "tier": 2, "p50": 110, "req_m": 75, "nouns": ["integration", "install", "sync job", "OAuth grant"]},
     {"name": "analytics", "title": "Analytics", "team": "Data Platform", "channel": "#team-data",
      "tier": 3, "p50": 140, "req_m": 60, "nouns": ["dashboard", "report", "metric", "scheduled export"]},
 ]
 SERVICE_BY_NAME = {s["name"]: s for s in SERVICES}
 
-# Availability objective by service tier (internal SLO, stricter than the
-# customer-facing uptime target in docs/company-overview.md).
-TIER_SLO = {1: 99.95, 2: 99.9, 3: 99.5}
+# Availability objective by service tier, as defined in
+# docs/architecture/reliability-and-scaling.md.
+TIER_SLO = {1: 99.995, 2: 99.95, 3: 99.9}
 
 # ---------------------------------------------------------------------------
 # Incident scenarios: (slug, title, root cause, resolution, [action items])
@@ -492,7 +492,7 @@ def build_service_months(months: list[tuple[int, int]], incidents: list[dict]) -
         r = rng(f"service-months:{svc['name']}")
         for month in months:
             minutes = calendar.monthrange(*month)[1] * 1440
-            down = r.uniform(0, 6)
+            down = r.uniform(0, 1.8)
             hit = [i for i in incidents if i["service"] == svc["name"] and i["month"] == month]
             down += sum(i["duration"] * weight[i["sev"]] for i in hit)
             bump = 1 + 0.12 * len(hit)
@@ -766,7 +766,7 @@ The five slowest endpoints in {label} by p95 latency:
 
 ## Availability against objectives
 
-Internal availability objectives are **99.95%** for Tier 1 services, **99.9%** for Tier 2 and **99.5%** for Tier 3. Customer-facing uptime targets are in `docs/company-overview.md`.
+Internal availability objectives are **99.995%** for Tier 1 services, **99.95%** for Tier 2 and **99.9%** for Tier 3, as defined in `docs/architecture/reliability-and-scaling.md`. Customer-facing uptime targets are in `docs/company-overview.md`.
 
 {table(['Service', 'Tier', 'Objective', 'Measured in ' + label, 'Result'], slo_rows)}
 
@@ -991,10 +991,10 @@ def build_fixtures() -> dict[str, tuple[str, list[dict]]]:
     fx["accounts"] = ("sample-accounts.json", [
         {"account_id": a, "name": f"Example Account {i + 1:02d}", "plan": r.choice(PLANS),
          "state": r.choice(["trialing", "active", "active", "active", "past_due", "read_only", "closed"]),
-         "home_region": r.choice(REGIONS), "seats": r.randrange(1, 120), "created_at": day(30, 900)}
+         "seats": r.randrange(1, 120), "workspace_count": r.randrange(1, 6), "created_at": day(30, 900)}
         for i, a in enumerate(accounts)])
     fx["auth"] = ("sample-api-keys.json", [
-        {"key_id": make_id(r, "key_", 6), "account_id": r.choice(accounts),
+        {"key_id": make_id(r, "key_", 8), "account_id": r.choice(accounts),
          "prefix": r.choice(["acme_live_", "acme_test_"]),
          "scopes": sorted(r.sample(["projects:read", "projects:write", "files:read", "files:write",
                                     "members:read", "billing:read"], r.randrange(1, 4))),
