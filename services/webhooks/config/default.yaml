@@ -1,0 +1,101 @@
+# Default configuration for the Acme Cloud Webhooks service.
+# Values here must match docs/*.md. Secrets are never stored in this file:
+# entries ending in _env name the environment variable that holds the secret.
+
+service:
+  name: webhooks
+  api_base_path: /v2/webhooks
+  port: 8080
+  log_level: info
+  request_timeout_seconds: 10
+
+endpoints:
+  # Maximum endpoints per workspace. Free does not include webhooks.
+  max_per_workspace:
+    free: 0
+    starter: 3
+    pro: 10
+    business: 25
+    enterprise: 100
+  allowed_schemes: [https]
+  allowed_ports: [443]
+  min_tls_version: "1.2"
+  max_url_length: 2048
+  max_description_length: 200
+  max_subscription_entries: 50
+  block_private_networks: true      # rejects IP literals, localhost and internal addresses
+  config_propagation_seconds: 60    # time for a change to reach the delivery workers
+  manage_roles: [owner, admin]
+  retain_after_downgrade_to_free_days: 30
+
+events:
+  api_version: v2
+  max_payload_bytes: 262144         # 256 KB
+  target_delivery_seconds: 5
+  account_level_resources: [invoice, account]
+  test_event_type: webhook.test
+  test_events_per_minute: 10        # per endpoint; test events are never retried
+
+signing:
+  header: Acme-Signature
+  algorithm: hmac-sha256
+  scheme_version: v1
+  secret_prefix: whsec_
+  secret_random_chars: 32
+  timestamp_tolerance_seconds: 300  # 5 minutes
+  rotation_overlap_hours: 24
+  forced_expiry_seconds: 60         # "Expire old secret now"
+  # Key used to encrypt stored signing secrets at rest.
+  secret_encryption_key_env: ACME_WEBHOOKS_SECRET_ENCRYPTION_KEY
+
+delivery:
+  timeout_seconds: 10
+  follow_redirects: false
+  success_status_range: [200, 299]
+  max_concurrent_per_endpoint: 10
+  user_agent: AcmeCloud-Webhooks/2.0
+  response_excerpt_bytes: 1024
+
+retry:
+  max_attempts: 8                   # 1 initial attempt + 7 retries
+  # 1 min, 5 min, 30 min, 2 h, 6 h, 12 h, 24 h (44 h 36 min in total)
+  delays_seconds: [60, 300, 1800, 7200, 21600, 43200, 86400]
+  max_jitter_fraction: 0.10         # only ever lengthens a delay
+  retry_after_cap_seconds: 3600
+  honour_retry_after_statuses: [429, 503]
+
+auto_disable:
+  warning_consecutive_failures: 25  # account_notice to Owner and Admins
+  disable_consecutive_failures: 50
+  disable_immediately_on_status: [410]
+
+delivery_log:
+  retention_days:
+    starter: 7
+    pro: 30
+    business: 30
+    enterprise: 90
+  max_bulk_redeliver: 100
+
+feature_flags:
+  wildcard_subscriptions: true
+  manual_redelivery: true
+  secret_rotation_overlap: true
+  audit_log_endpoint_changes: true  # recorded for Pro and above
+
+regions:
+  us-east:
+    default: true
+    queue_url_env: ACME_WEBHOOKS_QUEUE_URL_US_EAST
+    database_url_env: ACME_WEBHOOKS_DB_URL_US_EAST
+    delivery_workers: 24
+  eu-central:
+    default: false
+    queue_url_env: ACME_WEBHOOKS_QUEUE_URL_EU_CENTRAL
+    database_url_env: ACME_WEBHOOKS_DB_URL_EU_CENTRAL
+    delivery_workers: 12
+  ap-south:
+    default: false
+    queue_url_env: ACME_WEBHOOKS_QUEUE_URL_AP_SOUTH
+    database_url_env: ACME_WEBHOOKS_DB_URL_AP_SOUTH
+    delivery_workers: 6

@@ -50,7 +50,7 @@ Security-relevant actions by customers and by staff are written to the audit log
 
 - Databases are backed up every day, and backups are kept for **35 days**.
 - A restore from backup is tested every **3 months**.
-- Each region has a standby availability zone. The recovery targets for losing a zone are a recovery time of **60 minutes** and a data loss window of at most **5 minutes**.
+- Each region has a standby availability zone. When one availability zone is lost, database standbys are promoted automatically with a recovery time target of **5 minutes** and no lost transactions. A manual failover of every service to the standby zone has a recovery time target of **60 minutes** and a data loss window of at most **5 minutes**. Rebuilding a whole region has a recovery time target of **4 hours**. See `docs/architecture/multi-region-and-data-residency.md`.
 - A region failover drill is run every **6 months** in each region.
 - Uptime targets are **99.9%** monthly on Starter and Pro, **99.95%** on Business and **99.99%** on Enterprise.
 

@@ -1,0 +1,629 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Audit Log API
+  version: 2.0.0
+  description: >
+    Read, export, stream and verify the immutable audit log of an account.
+    Fictional API used as sample documentation. Available on Pro, Business
+    and Enterprise. There is no operation to change or delete an entry.
+  contact:
+    name: Trust and Compliance
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: Entries
+  - name: Exports
+  - name: Streams
+  - name: Integrity
+paths:
+  /v2/audit-log/{account_id}/entries:
+    get:
+      operationId: listEntries
+      tags: [Entries]
+      summary: List and filter entries
+      description: Newest first. Needs an API key with the `members:read` scope.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: '2026-11-01T00:00:00Z'
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: '2026-11-26T23:59:59Z'
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/Category'
+        - name: event_type
+          in: query
+          schema:
+            type: string
+          example: member.role_changed
+        - name: actor_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/ActorType'
+        - name: actor_id
+          in: query
+          schema:
+            type: string
+          example: admin@customer.example
+        - name: workspace_id
+          in: query
+          schema:
+            type: string
+          example: ws_4H8P2L
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entries]
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    example: null
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /v2/audit-log/{account_id}/entries/{entry_id}:
+    get:
+      operationId: getEntry
+      tags: [Entries]
+      summary: Get one entry with its hashes
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^aud_[A-Z0-9]{10}$'
+          example: aud_7H2KQ9M4XP
+      responses:
+        '200':
+          description: The entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEntry'
+        '404':
+          description: No such entry, or it has passed the retention window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: Entry aud_7H2KQ9M4XP was not found.
+  /v2/audit-log/{account_id}/exports:
+    post:
+      operationId: createExport
+      tags: [Exports]
+      summary: Start an export
+      description: Up to 1,000,000 entries per export and 5 exports per account per day.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from, to, format]
+              properties:
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+                format:
+                  type: string
+                  enum: [csv, jsonl]
+                categories:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Category'
+            example:
+              from: '2026-10-01T00:00:00Z'
+              to: '2026-10-31T23:59:59Z'
+              format: jsonl
+              categories: [authentication, security]
+      responses:
+        '202':
+          description: Export queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '422':
+          description: The range holds more than 1,000,000 entries or lies outside the retention window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: export_too_large
+                message: The range holds more than 1,000,000 entries. Split it into smaller ranges.
+        '429':
+          description: The account has already started 5 exports today.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: export_limit_reached
+                message: An account can start 5 exports per day.
+  /v2/audit-log/{account_id}/exports/{export_id}:
+    get:
+      operationId: getExport
+      tags: [Exports]
+      summary: Export status and download link
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: export_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^exp_[A-Z0-9]{8}$'
+          example: exp_3M7Q1Z8K
+      responses:
+        '200':
+          description: The export.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+  /v2/audit-log/{account_id}/streams:
+    get:
+      operationId: listStreams
+      tags: [Streams]
+      summary: List SIEM streams
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The account's streams. Credentials are never returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stream'
+    post:
+      operationId: createStream
+      tags: [Streams]
+      summary: Create a SIEM stream
+      description: Business (1 stream) and Enterprise (5 streams) only.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, destination_type, destination_url]
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                destination_type:
+                  $ref: '#/components/schemas/DestinationType'
+                destination_url:
+                  type: string
+                  format: uri
+                  description: Must use HTTPS.
+                credential_ref:
+                  type: string
+                  description: >
+                    Reference to a credential entered in the app. Destination
+                    tokens are never sent through this API.
+                categories:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Category'
+            example:
+              name: Security team SIEM
+              destination_type: https
+              destination_url: https://siem.customer.example/acme-audit
+              categories: [authentication, members, security]
+      responses:
+        '201':
+          description: Stream created in the `paused` state until it is enabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The plan's stream limit is reached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: stream_limit_reached
+                message: The Business plan allows 1 stream per account.
+  /v2/audit-log/{account_id}/streams/{stream_id}:
+    delete:
+      operationId: deleteStream
+      tags: [Streams]
+      summary: Delete a SIEM stream
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^strm_[A-Z0-9]{8}$'
+          example: strm_6C2X9R4B
+      responses:
+        '204':
+          description: Stream and its stored credentials deleted.
+        '404':
+          description: No such stream.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: Stream strm_6C2X9R4B was not found.
+  /v2/audit-log/{account_id}/verify:
+    post:
+      operationId: verifyChain
+      tags: [Integrity]
+      summary: Verify the hash chain for a range
+      description: Checks up to 100,000 entries per request.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from_sequence, to_sequence]
+              properties:
+                from_sequence:
+                  type: integer
+                  minimum: 1
+                to_sequence:
+                  type: integer
+                  minimum: 1
+            example:
+              from_sequence: 18001
+              to_sequence: 18250
+      responses:
+        '200':
+          description: Result of the check.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResult'
+        '422':
+          description: The range is larger than 100,000 entries or starts before the oldest retained entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: range_too_large
+                message: A verification can cover at most 100,000 entries.
+  /v2/audit-log/{account_id}/retention:
+    get:
+      operationId: getRetention
+      tags: [Integrity]
+      summary: Retention window and next purge
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Retention settings that apply to the account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Retention'
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key starting with `acme_live_` (production) or `acme_test_` (sandbox).
+  parameters:
+    AccountId:
+      name: account_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^acc_[A-Z0-9]{8}$'
+      example: acc_7F3K9Q2M
+  responses:
+    Forbidden:
+      description: The plan has no audit log, or the caller may not use this operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: audit_log_not_available
+            message: The audit log is available on Pro, Business and Enterprise.
+    RateLimited:
+      description: Account API rate limit exceeded.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: rate_limited
+            message: Too many requests. Retry after 8 seconds.
+  schemas:
+    Category:
+      type: string
+      enum: [authentication, members, security, data, billing, integrations, account, audit]
+      example: members
+    ActorType:
+      type: string
+      enum: [user, api_key, system, support]
+      example: user
+    DestinationType:
+      type: string
+      enum: [https, splunk_hec, datadog, s3]
+      example: https
+    AuditEntry:
+      type: object
+      required: [id, sequence, occurred_at, event_type, category, actor, account_id, region, prev_hash, hash]
+      properties:
+        id:
+          type: string
+          pattern: '^aud_[A-Z0-9]{10}$'
+        sequence:
+          type: integer
+          minimum: 1
+        occurred_at:
+          type: string
+          format: date-time
+        event_type:
+          type: string
+          description: Event name in `resource.action` form.
+        category:
+          $ref: '#/components/schemas/Category'
+        actor:
+          type: object
+          required: [type, id]
+          properties:
+            type:
+              $ref: '#/components/schemas/ActorType'
+            id:
+              type: string
+              description: Email address, API key name, `system` or a support ticket ID.
+        account_id:
+          type: string
+        workspace_id:
+          type: string
+          nullable: true
+        target_id:
+          type: string
+          nullable: true
+        ip_address:
+          type: string
+          nullable: true
+        region:
+          type: string
+          enum: [us-east, eu-central, ap-south]
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Up to 20 scalar values and 4,096 bytes. Never contains secrets.
+        prev_hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+      example:
+        id: aud_7H2KQ9M4XP
+        sequence: 18250
+        occurred_at: '2026-11-26T09:30:12Z'
+        event_type: member.role_changed
+        category: members
+        actor:
+          type: user
+          id: admin@customer.example
+        account_id: acc_7F3K9Q2M
+        workspace_id: ws_4H8P2L
+        target_id: null
+        ip_address: 203.0.113.10
+        region: us-east
+        metadata:
+          member: new.hire@customer.example
+          old_role: Member
+          new_role: Admin
+        prev_hash: 9f2c4e1ab07d5c3388e6f1d2a4b5c6d7e8f90123456789abcdef0123456789ab
+        hash: 1b7d3a9e5c2f4081d6e7a8b9c0d1e2f3a4b5c6d7e8f9012345678901234567cd
+    Export:
+      type: object
+      required: [id, status, format, from, to, created_at]
+      properties:
+        id:
+          type: string
+          pattern: '^exp_[A-Z0-9]{8}$'
+          example: exp_3M7Q1Z8K
+        status:
+          type: string
+          enum: [queued, running, ready, failed, expired]
+          example: ready
+        format:
+          type: string
+          enum: [csv, jsonl]
+          example: jsonl
+        from:
+          type: string
+          format: date-time
+          example: '2026-10-01T00:00:00Z'
+        to:
+          type: string
+          format: date-time
+          example: '2026-10-31T23:59:59Z'
+        entry_count:
+          type: integer
+          nullable: true
+          example: 4312
+        download_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Present when status is `ready`. Valid for 24 hours.
+          example: https://app.acme-cloud.example/audit-log/exports/exp_3M7Q1Z8K/download
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-27T10:05:00Z'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-26T09:50:00Z'
+    Stream:
+      type: object
+      required: [id, name, destination_type, destination_url, status, created_at]
+      properties:
+        id:
+          type: string
+          pattern: '^strm_[A-Z0-9]{8}$'
+          example: strm_6C2X9R4B
+        name:
+          type: string
+          example: Security team SIEM
+        destination_type:
+          $ref: '#/components/schemas/DestinationType'
+        destination_url:
+          type: string
+          format: uri
+          example: https://siem.customer.example/acme-audit
+        categories:
+          type: array
+          description: Empty means all categories.
+          items:
+            $ref: '#/components/schemas/Category'
+          example: [authentication, members, security]
+        status:
+          type: string
+          enum: [active, paused, failing]
+          example: active
+        last_delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-26T09:30:40Z'
+        last_delivered_sequence:
+          type: integer
+          nullable: true
+          example: 18250
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-09-14T13:00:00Z'
+    VerificationResult:
+      type: object
+      required: [valid, checked]
+      properties:
+        valid:
+          type: boolean
+          example: true
+        checked:
+          type: integer
+          description: Number of entries verified before stopping.
+          example: 250
+        first_invalid_sequence:
+          type: integer
+          nullable: true
+          example: null
+        reason:
+          type: string
+          nullable: true
+          enum: [prev_hash_mismatch, sequence_gap, hash_mismatch, null]
+          example: null
+    Retention:
+      type: object
+      required: [plan, retention_days, legal_hold, next_purge_at]
+      properties:
+        plan:
+          type: string
+          enum: [pro, business, enterprise]
+          example: business
+        retention_days:
+          type: integer
+          description: 90 on Pro, 365 on Business, 2,555 on Enterprise.
+          example: 365
+        legal_hold:
+          type: boolean
+          description: Enterprise only. While true, nothing is purged.
+          example: false
+        downgrade_grace_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        oldest_entry_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-11-27T00:14:09Z'
+        next_purge_at:
+          type: string
+          format: date-time
+          example: '2026-11-27T02:00:00Z'
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: Entry aud_7H2KQ9M4XP was not found.

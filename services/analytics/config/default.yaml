@@ -1,0 +1,124 @@
+# Default configuration for the Analytics service.
+# Values here must match the docs in services/analytics/docs/.
+# No secrets in this file: secrets are named as environment variables only.
+
+service:
+  name: analytics
+  api_base_path: /v2/analytics
+  default_region: us-east
+  owner_team: Data Platform
+
+dashboards:
+  built_in: [workspace_overview, project_progress, team_workload, usage]
+  max_widgets_per_dashboard: 12
+  max_table_rows: 50
+  max_daily_range_days: 366             # longer ranges switch to weekly or monthly
+  preset_ranges_days: [7, 28, 90]
+  # Custom dashboards per workspace. null means unlimited.
+  custom_limits:
+    free: 0
+    starter: 3
+    pro: 20
+    business: 100
+    enterprise: null
+  billing_admin_visible: [usage]        # Billing admins see the Usage dashboard only
+  guests_can_view: false
+
+metrics:
+  active_member_windows_days:
+    daily: 1
+    weekly: 7
+    monthly: 28
+  qualifying_actions:
+    - task.created
+    - task.edited
+    - task.completed
+    - comment.added
+    - file.uploaded
+    - file.edited
+    - project.created
+    - project.edited
+  count_guests_as_active: false
+  cycle_time_percentile: 85
+  rounding_decimals: 1                  # halves round up
+  week_start: monday                    # ISO weeks
+
+freshness:
+  today_refresh_interval_seconds: 900   # every 15 minutes
+  daily_rollup_local_time: "02:00"      # workspace time zone
+  late_event_window_hours: 48           # a day is final 48 hours after it ends
+  default_time_zone: UTC
+
+retention:
+  raw_event_days: 90
+  # Analytics history in days, counted back from today.
+  history_days:
+    free: 30
+    starter: 90
+    pro: 365
+    business: 730
+    enterprise: 1825
+  hidden_history_delete_after_days: 30  # after a downgrade
+  closed_account_delete_after_days: 30  # same as the account data retention window
+
+scheduled_reports:
+  # Schedules per workspace, paused ones included.
+  limits:
+    free: 0
+    starter: 2
+    pro: 10
+    business: 50
+    enterprise: 200
+  cadences: [daily, weekly, monthly]
+  formats: [pdf, csv, xlsx]
+  default_send_hour: 8
+  max_recipients: 25
+  max_attachment_mb: 10
+  pause_after_consecutive_failures: 3
+  delivery_target_minutes: 15
+  roles_allowed_to_manage: [owner, admin]
+  sender_address: support@acme-cloud.example
+
+exports:
+  sync_row_limit: 10000                 # downloads straight away up to this size
+  max_rows: 1000000
+  download_link_ttl_days: 7
+  per_member_per_hour: 10
+  free_plan_formats: [csv]
+  background_target_minutes: 10
+
+timeouts:
+  metric_query_seconds: 20
+  export_job_seconds: 900
+  email_delivery_seconds: 30
+
+feature_flags:
+  custom_dashboards: true
+  burndown_widget: true
+  slack_report_summaries: true          # needs the Slack integration installed
+  xlsx_exports: true
+
+# Per-region settings. Analytics data never leaves the workspace's region.
+regions:
+  us-east:
+    enabled: true
+    rollup_workers: 16
+    warehouse_url_env: ANALYTICS_WAREHOUSE_URL_US_EAST
+    export_bucket_env: ANALYTICS_EXPORT_BUCKET_US_EAST
+  eu-central:
+    enabled: true
+    rollup_workers: 8
+    warehouse_url_env: ANALYTICS_WAREHOUSE_URL_EU_CENTRAL
+    export_bucket_env: ANALYTICS_EXPORT_BUCKET_EU_CENTRAL
+  ap-south:
+    enabled: true
+    rollup_workers: 4
+    warehouse_url_env: ANALYTICS_WAREHOUSE_URL_AP_SOUTH
+    export_bucket_env: ANALYTICS_EXPORT_BUCKET_AP_SOUTH
+
+mail:
+  smtp_password_env: ANALYTICS_SMTP_PASSWORD
+
+logging:
+  level: info
+  redact_fields: [recipients, download_url]

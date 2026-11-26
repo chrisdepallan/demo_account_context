@@ -295,8 +295,8 @@ components:
       type: object
       properties:
         enabled: {type: boolean, default: false, example: true}
-        start: {type: string, description: Local time, 15-minute steps, default: '22:00', example: '22:00'}
-        end: {type: string, description: Local time, 15-minute steps, default: '07:00', example: '07:00'}
+        start: {type: string, description: 'Local time, 15-minute steps', default: '22:00', example: '22:00'}
+        end: {type: string, description: 'Local time, 15-minute steps', default: '07:00', example: '07:00'}
     Preferences:
       type: object
       properties:

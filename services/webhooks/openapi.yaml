@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Webhooks API
+  version: 2.0.0
+  description: >
+    API of the Webhooks service: event catalog, endpoint management, signing
+    secret rotation, test events, delivery log and redelivery. All data is
+    fictional. Example secrets are placeholders, not real credentials.
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: Events
+  - name: Endpoints
+  - name: Deliveries
+paths:
+  /v2/webhooks/event-types:
+    get:
+      tags: [Events]
+      operationId: listEventTypes
+      summary: List the event catalog
+      responses:
+        '200':
+          description: All 22 event types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/EventType'}
+  /v2/webhooks/{workspace_id}/endpoints:
+    get:
+      tags: [Endpoints]
+      operationId: listEndpoints
+      summary: List the endpoints of a workspace
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Endpoints, including paused and disabled ones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/Endpoint'}
+                  limit:
+                    type: integer
+                    description: Endpoint limit of the plan (3, 10, 25 or 100).
+                    example: 10
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Endpoints]
+      operationId: createEndpoint
+      summary: Register an endpoint (Owner and Admin only)
+      description: The signing secret is returned in this response only.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EndpointCreate'}
+      responses:
+        '201':
+          description: The new endpoint with its signing secret
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EndpointWithSecret'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409':
+          description: Endpoint limit of the plan reached, or URL already registered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422': {$ref: '#/components/responses/Invalid'}
+  /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}:
+    get:
+      tags: [Endpoints]
+      operationId: getEndpoint
+      summary: Get endpoint details and health
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+      responses:
+        '200':
+          description: The endpoint (never includes the signing secret)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Endpoint'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [Endpoints]
+      operationId: updateEndpoint
+      summary: Change URL, description, subscription or state
+      description: >
+        Set state to paused to pause, or to active to resume a paused endpoint
+        or enable a disabled one (this resets the failure count).
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EndpointUpdate'}
+      responses:
+        '200':
+          description: The updated endpoint
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Endpoint'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/Invalid'}
+    delete:
+      tags: [Endpoints]
+      operationId: deleteEndpoint
+      summary: Delete an endpoint and its delivery log
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+      responses:
+        '204':
+          description: Deleted
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/rotate-secret:
+    post:
+      tags: [Endpoints]
+      operationId: rotateSecret
+      summary: Issue a new signing secret
+      description: >
+        The old secret keeps signing deliveries for 24 hours unless
+        expire_old_now is true, in which case it stops within 60 seconds.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expire_old_now: {type: boolean, default: false}
+      responses:
+        '200':
+          description: The endpoint with its new signing secret (shown once)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EndpointWithSecret'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/test:
+    post:
+      tags: [Endpoints]
+      operationId: sendTestEvent
+      summary: Send a webhook.test event (one attempt, not retried)
+      description: Limited to 10 test events per minute per endpoint.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+      responses:
+        '200':
+          description: Result of the single attempt
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Delivery'}
+        '429':
+          description: More than 10 test events in a minute
+          headers:
+            Retry-After:
+              schema: {type: integer, example: 30}
+              description: Seconds to wait before retrying
+  /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/deliveries:
+    get:
+      tags: [Deliveries]
+      operationId: listDeliveries
+      summary: List the delivery log of an endpoint
+      description: Covers 7 days on Starter, 30 days on Pro and Business, 90 days on Enterprise.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/EndpointId'
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/DeliveryStatus'}
+        - name: event_type
+          in: query
+          schema: {type: string, example: task.completed}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: A page of deliveries, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/Delivery'}
+                  next_cursor: {type: string, nullable: true, example: null}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v2/webhooks/{workspace_id}/deliveries/{delivery_id}/redeliver:
+    post:
+      tags: [Deliveries]
+      operationId: redeliver
+      summary: Send a logged event again as a new delivery
+      description: The new delivery keeps the event ID and gets the full schedule of 8 attempts.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: delivery_id
+          in: path
+          required: true
+          schema: {type: string, pattern: '^dlv_[A-Z0-9]{10}$'}
+          example: dlv_5P8W2K7D3F
+      responses:
+        '202':
+          description: The new delivery
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Delivery'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: The endpoint is paused or disabled
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: >
+        API key created by an Owner or Admin. Keys start with acme_live_
+        (production) or acme_test_ (sandbox).
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema: {type: string, pattern: '^ws_[A-Z0-9]{6}$'}
+      example: ws_4H8P2L
+    EndpointId:
+      name: endpoint_id
+      in: path
+      required: true
+      schema: {type: string, pattern: '^whk_[A-Z0-9]{8}$'}
+      example: whk_6R2T9B4M
+  responses:
+    Forbidden:
+      description: Caller is not an Owner or Admin, or the plan does not include webhooks
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Not found, or no longer in the delivery log
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Invalid:
+      description: Validation failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    EventType:
+      type: object
+      properties:
+        type: {type: string, example: task.completed}
+        description: {type: string, example: A task was marked as complete}
+        account_level:
+          type: boolean
+          description: True for invoice.* and account.* events, which have no workspace.
+          example: false
+    Subscription:
+      type: array
+      description: Exact event types, resource wildcards such as task.*, or "*".
+      minItems: 1
+      maxItems: 50
+      items: {type: string}
+      example: ['task.*', invoice.paid]
+    EndpointState:
+      type: string
+      enum: [active, paused, disabled]
+      example: active
+    EndpointCreate:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: HTTPS on port 443 with a public host name.
+          example: https://hooks.customer.example/acme
+        description: {type: string, maxLength: 200, example: Sync completed tasks to our CRM}
+        events: {$ref: '#/components/schemas/Subscription'}
+    EndpointUpdate:
+      type: object
+      properties:
+        url: {type: string, format: uri, maxLength: 2048, example: https://hooks.customer.example/acme-v2}
+        description: {type: string, maxLength: 200}
+        events: {$ref: '#/components/schemas/Subscription'}
+        state:
+          type: string
+          enum: [active, paused]
+          example: paused
+    Endpoint:
+      type: object
+      required: [id, url, events, state]
+      properties:
+        id: {type: string, example: whk_6R2T9B4M}
+        workspace_id: {type: string, example: ws_4H8P2L}
+        url: {type: string, format: uri, example: https://hooks.customer.example/acme}
+        description: {type: string, example: Sync completed tasks to our CRM}
+        events: {$ref: '#/components/schemas/Subscription'}
+        state: {$ref: '#/components/schemas/EndpointState'}
+        consecutive_failures:
+          type: integer
+          description: Warning at 25, endpoint disabled at 50.
+          example: 0
+        disabled_reason:
+          type: string
+          nullable: true
+          enum: [consecutive_failures, gone_410, plan_downgrade, account_closed, null]
+          example: null
+        secret_rotated_at: {type: string, format: date-time, nullable: true, example: null}
+        last_success_at: {type: string, format: date-time, nullable: true, example: '2026-11-26T14:03:02Z'}
+        created_at: {type: string, format: date-time, example: '2026-10-02T09:30:00Z'}
+    EndpointWithSecret:
+      allOf:
+        - $ref: '#/components/schemas/Endpoint'
+        - type: object
+          properties:
+            signing_secret:
+              type: string
+              description: Shown once. Starts with whsec_ followed by 32 characters.
+              example: whsec_EXAMPLE_NOT_A_REAL_SECRET
+    DeliveryStatus:
+      type: string
+      enum: [pending, succeeded, retrying, failed, skipped]
+      example: succeeded
+    DeliveryAttempt:
+      type: object
+      properties:
+        attempt: {type: integer, minimum: 1, maximum: 8, example: 1}
+        attempted_at: {type: string, format: date-time, example: '2026-11-26T14:03:02Z'}
+        status_code: {type: integer, nullable: true, description: Null on timeout or connection error., example: 200}
+        duration_ms: {type: integer, example: 184}
+        response_excerpt: {type: string, description: 'First 1,024 bytes of the response body.', example: ok}
+    Delivery:
+      type: object
+      required: [id, event_id, event_type, status]
+      properties:
+        id: {type: string, example: dlv_5P8W2K7D3F}
+        endpoint_id: {type: string, example: whk_6R2T9B4M}
+        event_id: {type: string, example: evt_3N7Q1Z8K4B}
+        event_type: {type: string, example: task.completed}
+        status: {$ref: '#/components/schemas/DeliveryStatus'}
+        attempts:
+          type: array
+          maxItems: 8
+          items: {$ref: '#/components/schemas/DeliveryAttempt'}
+        next_attempt_at: {type: string, format: date-time, nullable: true, example: null}
+        redelivery_of: {type: string, nullable: true, description: Original delivery ID for a redelivery., example: null}
+        created_at: {type: string, format: date-time, example: '2026-11-26T14:03:01Z'}
+    Event:
+      type: object
+      description: The envelope sent as the body of every delivery.
+      required: [id, type, api_version, created_at, account_id, workspace_id, data]
+      properties:
+        id: {type: string, example: evt_3N7Q1Z8K4B}
+        type: {type: string, example: task.completed}
+        api_version: {type: string, enum: [v2], example: v2}
+        created_at: {type: string, format: date-time, example: '2026-11-26T14:03:00Z'}
+        account_id: {type: string, example: acc_7F3K9Q2M}
+        workspace_id: {type: string, nullable: true, description: Null for account-level events., example: ws_4H8P2L}
+        data:
+          type: object
+          additionalProperties: true
+          example:
+            id: tsk_9D3F7H2K
+            project_id: prj_5T8N2W6R
+            title: Prepare launch checklist
+            completed_at: '2026-11-26T14:03:00Z'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string, example: endpoint_limit_reached}
+        message: {type: string, example: 'This workspace already has 10 endpoints, the limit of the Pro plan.'}

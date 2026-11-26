@@ -1,0 +1,100 @@
+# Default configuration for the Audit Log service.
+# Values here must match the docs in services/audit-log/docs/.
+# Secrets are never stored in this file: they are read from the environment
+# variables named in the *_env keys.
+
+service:
+  name: audit-log
+  api_base_path: /v2/audit-log
+  port: 8080
+  log_level: info
+  default_region: us-east
+
+recording:
+  max_write_delay_seconds: 60        # an action must be visible within 60 s
+  metadata_max_keys: 20
+  metadata_max_bytes: 4096
+  # Metadata keys containing these words are rejected before writing.
+  forbidden_metadata_words: [password, secret, token, api_key, private_key]
+  enterprise_only_events: [file.downloaded]
+  actor_types: [user, api_key, system, support]
+
+retention:
+  # Days per plan; 0 means the plan has no audit log.
+  days_by_plan:
+    free: 0
+    starter: 0
+    pro: 90
+    business: 365
+    enterprise: 2555               # 7 years
+  purge_schedule_utc: "02:00"      # daily
+  downgrade_grace_days: 30
+  closed_account_retention_days: 30  # same as the account data retention window
+  legal_hold_plans: [enterprise]
+
+integrity:
+  hash_algorithm: sha256
+  genesis_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+  keep_checkpoint_on_purge: true
+  verify_max_entries: 100000
+
+api:
+  default_page_size: 100
+  max_page_size: 1000
+  required_scope: members:read
+  request_timeout_ms: 10000
+
+export:
+  formats: [csv, jsonl]
+  max_entries: 1000000
+  max_per_account_per_day: 5
+  download_link_ttl_hours: 24
+  target_ready_minutes: 30
+
+streaming:
+  streams_by_plan:
+    free: 0
+    starter: 0
+    pro: 0
+    business: 1
+    enterprise: 5
+  destination_types: [https, splunk_hec, datadog, s3]
+  require_https: true
+  batch_max_entries: 500
+  batch_max_wait_seconds: 30
+  delivery_timeout_seconds: 10
+  retry_initial_delay_seconds: 60
+  retry_max_duration_hours: 24     # then the stream is paused
+  backfill_days_on_resume: 7
+  signature_header: X-Acme-Audit-Signature
+  signature_algorithm: hmac-sha256
+
+feature_flags:
+  siem_streaming: true
+  legal_hold: true
+  integrity_check_ui: true
+  record_read_events_enterprise: true
+  customer_managed_keys: false     # not released; do not document as available
+
+regions:
+  us-east:
+    enabled: true
+    store_host: audit-store.us-east.internal.acme-cloud.example
+    export_bucket: acme-audit-exports-us-east
+    stream_workers: 8
+  eu-central:
+    enabled: true
+    store_host: audit-store.eu-central.internal.acme-cloud.example
+    export_bucket: acme-audit-exports-eu-central
+    stream_workers: 4
+  ap-south:
+    enabled: true
+    store_host: audit-store.ap-south.internal.acme-cloud.example
+    export_bucket: acme-audit-exports-ap-south
+    stream_workers: 2
+
+credentials:
+  store_username_env: AUDIT_STORE_USERNAME
+  store_password_env: AUDIT_STORE_PASSWORD
+  stream_credential_encryption_key_env: AUDIT_STREAM_ENCRYPTION_KEY
+  export_signing_key_env: AUDIT_EXPORT_SIGNING_KEY

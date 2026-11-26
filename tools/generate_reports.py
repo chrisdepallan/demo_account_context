@@ -311,7 +311,7 @@ SECURITY_FINDINGS = [
 NEXT_PRIORITIES = [
     "Reduce p95 latency of the slowest three services by 15%.",
     "Close every open postmortem action item older than 60 days.",
-    "Bring test coverage of every service to at least 85%.",
+    "Raise line coverage of the three least-covered services.",
     "Complete the quarterly access review within the first two weeks of the quarter.",
     "Cut P1 first-response misses to zero for Enterprise accounts.",
     "Move remaining single-region batch jobs to run in each region.",
@@ -711,7 +711,7 @@ The weekly full test run for **{run['label']}** (week starting {run['week'].isof
 
 ## Coverage
 
-The lowest line coverage in the {run['label']} run was **{lowest['coverage']}%** in the `{lowest['service']}` service. The target for every service is **85%**.
+The lowest line coverage in the {run['label']} run was **{lowest['coverage']}%** in the `{lowest['service']}` service. No coverage percentage is enforced; what must be tested is described in `docs/engineering/testing-strategy.md`.
 
 Report date: {(run['week'] + timedelta(days=6)).isoformat()}
 """
@@ -934,7 +934,7 @@ def render_access_review(quarter, q_months) -> str:
     for n in range(1, r.randrange(4, 8) + 1):
         sev, text = r.choice(SECURITY_FINDINGS)
         svc = r.choice(SERVICES)
-        days = {"High": 7, "Medium": 30, "Low": 90}[sev]
+        days = {"High": 30, "Medium": 90, "Low": 180}[sev]
         due = end + timedelta(days=14 + days)
         rows.append([f"FND-{quarter}-{n:02d}", sev, f"`{svc['name']}`", text, due.isoformat(),
                      "Closed" if due < REFERENCE_DATE else "Open"])
@@ -944,7 +944,7 @@ def render_access_review(quarter, q_months) -> str:
 
 ## Scope
 
-The **{quarter}** security and access review covered production access for all 12 services, service accounts, break-glass use, dependency scanning and secret scanning. The review is run by Trust and Compliance (`#team-trust`).
+The **{quarter}** security and access review covered production access for all 12 services, service accounts, break-glass use, dependency scanning and secret scanning. The review is run by Trust and Compliance (`#team-trust`) every 90 days, as required by `docs/security/access-control.md`.
 
 ## Findings in {quarter}
 
@@ -965,7 +965,7 @@ The {quarter} review raised **{len(rows)} findings**, of which **{high}** were H
 
 ## Remediation deadlines
 
-Findings must be fixed within **7 days** for High severity, **30 days** for Medium and **90 days** for Low, counted from the report date.
+Findings must be fixed within **30 days** for High severity, **90 days** for Medium and **180 days** for Low, counted from the report date. Critical findings are handled as security incidents under `docs/security/incident-response.md`.
 
 Report date: {(end + timedelta(days=14)).isoformat()}
 """
@@ -1012,7 +1012,9 @@ def build_fixtures() -> dict[str, tuple[str, list[dict]]]:
          "opened_at": stamp(), "first_response_minutes": r.randrange(4, 600)} for _ in range(10)])
     fx["projects"] = ("sample-tasks.json", [
         {"task_id": make_id(r, "tsk_", 8), "project_id": r.choice(projects), "workspace_id": r.choice(workspaces),
-         "title": r.choice(TASK_TITLES), "priority": r.choice(["low", "medium", "high"]),
+         "title": r.choice(TASK_TITLES),
+         "status": r.choice(["backlog", "todo", "in_progress", "in_review", "done", "cancelled"]),
+         "priority": r.choice(["low", "medium", "high", "urgent"]),
          "comment_count": r.randrange(0, 14), "created_at": stamp()} for _ in range(10)])
     fx["files"] = ("sample-files.json", [
         {"file_id": make_id(r, "fil_", 8), "workspace_id": r.choice(workspaces),

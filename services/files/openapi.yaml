@@ -1,0 +1,576 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Files API
+  version: "2.0.0"
+  description: >
+    File storage, versions, trash, share links and storage usage for Acme
+    Cloud workspaces (fictional). Requires an API key with the `files:read`
+    or `files:write` scope. Free accounts cannot use the API.
+  contact:
+    name: Storage Platform team
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: files
+  - name: uploads
+  - name: versions
+  - name: sharing
+  - name: usage
+paths:
+  /v2/files/{workspace_id}/files:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      tags: [files]
+      operationId: listFiles
+      summary: List files in a folder
+      parameters:
+        - name: folder
+          in: query
+          description: Folder path; defaults to the top level of the workspace
+          schema:
+            type: string
+            default: /
+          example: /design/logos
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [active, trashed]
+            default: active
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileList"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v2/files/{workspace_id}/uploads:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    post:
+      tags: [uploads]
+      operationId: createUpload
+      summary: Start an upload session
+      description: >
+        Checks the plan's maximum file size and the account's storage quota
+        before any content is sent. Sessions expire after 24 hours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadCreate"
+            example:
+              name: brand-guidelines.pdf
+              folder: /design
+              size_bytes: 157286400
+              chunk_size_bytes: 8388608
+      responses:
+        "201":
+          description: Upload session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Upload"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          description: The file is over the plan's maximum file size (`file_too_large`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: file_too_large
+                message: Files on the Starter plan can be at most 250 MB.
+        "422":
+          description: The file type is blocked (`file_type_blocked`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "507":
+          description: The account has used 100% of its storage (`quota_exceeded`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: quota_exceeded
+                message: This upload would exceed the account's storage quota.
+  /v2/files/{workspace_id}/uploads/{upload_id}/complete:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - name: upload_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^upl_[A-Z0-9]{8}$"
+        example: upl_7N4C1VB8
+    post:
+      tags: [uploads]
+      operationId: completeUpload
+      summary: Finish an upload and create the file or a new version
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sha256:
+                  type: string
+                  description: Optional client checksum to verify against
+                  example: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+      responses:
+        "201":
+          description: File created, or a new version added to an existing file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+        "410":
+          description: The upload session is older than 24 hours (`upload_expired`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: The content did not match the checksum (`checksum_mismatch`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v2/files/{workspace_id}/files/{file_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/FileId"
+    get:
+      tags: [files]
+      operationId: getFile
+      summary: Get file metadata and a download URL
+      responses:
+        "200":
+          description: The file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [files]
+      operationId: trashFile
+      summary: Move a file to the trash
+      description: The file can be restored for 30 days, then it is permanently deleted.
+      responses:
+        "204":
+          description: File moved to the trash
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v2/files/{workspace_id}/files/{file_id}/restore:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/FileId"
+    post:
+      tags: [files]
+      operationId: restoreFile
+      summary: Restore a file from the trash
+      responses:
+        "200":
+          description: The restored file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "410":
+          description: The file was permanently deleted after 30 days in the trash
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v2/files/{workspace_id}/files/{file_id}/versions:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/FileId"
+    get:
+      tags: [versions]
+      operationId: listVersions
+      summary: List the stored versions of a file
+      responses:
+        "200":
+          description: Versions, newest first (at most 100)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: "#/components/schemas/FileVersion"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v2/files/{workspace_id}/files/{file_id}/share-links:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/FileId"
+    post:
+      tags: [sharing]
+      operationId: createShareLink
+      summary: Create a share link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareLinkCreate"
+            example:
+              audience: anyone
+              access: view
+              expires_in_days: 30
+      responses:
+        "201":
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLink"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: The link breaks the plan's sharing rules (`share_link_not_allowed`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: share_link_not_allowed
+                message: Public links with edit access need a password.
+  /v2/files/{workspace_id}/usage:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      tags: [usage]
+      operationId: getUsage
+      summary: Get storage used and the account quota
+      responses:
+        "200":
+          description: Storage usage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usage"
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key starting with `acme_live_` (production) or `acme_test_` (sandbox).
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^ws_[A-Z0-9]{6}$"
+      example: ws_4H8P2L
+    FileId:
+      name: file_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^fil_[A-Z0-9]{8}$"
+      example: fil_6T2R9WQ4
+  responses:
+    Forbidden:
+      description: The caller's role does not allow this action, or the account is read-only
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: forbidden
+            message: Guests cannot upload files.
+    NotFound:
+      description: The file does not exist or is not visible to the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: not_found
+            message: File fil_6T2R9WQ4 was not found.
+    RateLimited:
+      description: Account API rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+          example: 12
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: rate_limited
+            message: Too many requests.
+  schemas:
+    File:
+      type: object
+      required: [id, workspace_id, name, folder, size_bytes, state, version, created_at]
+      properties:
+        id:
+          type: string
+          example: fil_6T2R9WQ4
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        name:
+          type: string
+          maxLength: 255
+          example: brand-guidelines.pdf
+        folder:
+          type: string
+          example: /design
+        size_bytes:
+          type: integer
+          format: int64
+          example: 157286400
+        sha256:
+          type: string
+          example: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+        state:
+          type: string
+          enum: [active, trashed, quarantined]
+          example: active
+        version:
+          type: integer
+          minimum: 1
+          example: 3
+        trashed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        download_url:
+          type: string
+          format: uri
+          description: Short-lived download URL
+          example: https://api.acme-cloud.example/v2/files/ws_4H8P2L/files/fil_6T2R9WQ4/content
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-10-14T11:20:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-11-18T16:45:30Z"
+    FileList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/File"
+        next_cursor:
+          type: string
+          nullable: true
+          example: null
+    FileVersion:
+      type: object
+      required: [version, size_bytes, created_at, is_current]
+      properties:
+        version:
+          type: integer
+          example: 2
+        size_bytes:
+          type: integer
+          format: int64
+          example: 151000000
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-01T09:00:00Z"
+        replaced_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When a newer version replaced this one; null for the current version
+          example: "2026-11-18T16:45:30Z"
+        is_current:
+          type: boolean
+          example: false
+    UploadCreate:
+      type: object
+      required: [name, size_bytes]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        folder:
+          type: string
+          default: /
+        size_bytes:
+          type: integer
+          format: int64
+          maximum: 5368709120
+        chunk_size_bytes:
+          type: integer
+          minimum: 5242880
+          maximum: 67108864
+          default: 8388608
+        file_id:
+          type: string
+          description: Existing file to add a new version to
+          example: fil_6T2R9WQ4
+    Upload:
+      type: object
+      required: [id, upload_url, chunk_size_bytes, expires_at]
+      properties:
+        id:
+          type: string
+          example: upl_7N4C1VB8
+        upload_url:
+          type: string
+          format: uri
+          example: https://api.acme-cloud.example/v2/files/ws_4H8P2L/uploads/upl_7N4C1VB8/chunks
+        chunk_size_bytes:
+          type: integer
+          example: 8388608
+        expires_at:
+          type: string
+          format: date-time
+          example: "2026-11-27T10:00:00Z"
+    ShareLinkCreate:
+      type: object
+      required: [audience, access]
+      properties:
+        audience:
+          type: string
+          enum: [workspace, invited, anyone]
+        access:
+          type: string
+          enum: [view, comment, edit]
+        expires_in_days:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Omit for the plan default; null for no expiry where the plan allows it
+        password:
+          type: string
+          minLength: 8
+          writeOnly: true
+          description: Never returned by the API
+    ShareLink:
+      type: object
+      required: [id, file_id, url, audience, access, password_protected, created_at]
+      properties:
+        id:
+          type: string
+          example: lnk_2P8D5KM3
+        file_id:
+          type: string
+          example: fil_6T2R9WQ4
+        url:
+          type: string
+          format: uri
+          example: https://app.acme-cloud.example/s/lnk_2P8D5KM3
+        audience:
+          type: string
+          enum: [workspace, invited, anyone]
+          example: anyone
+        access:
+          type: string
+          enum: [view, comment, edit]
+          example: view
+        password_protected:
+          type: boolean
+          example: false
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-12-26T10:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-26T10:00:00Z"
+    Usage:
+      type: object
+      required: [account_id, quota_bytes, used_bytes, state]
+      properties:
+        account_id:
+          type: string
+          example: acc_7F3K9Q2M
+        plan:
+          type: string
+          enum: [free, starter, pro, business, enterprise]
+          example: pro
+        seats:
+          type: integer
+          example: 8
+        storage_packs:
+          type: integer
+          example: 0
+        quota_bytes:
+          type: integer
+          format: int64
+          description: Account-wide quota (8 Pro seats x 50 GB)
+          example: 429496729600
+        used_bytes:
+          type: integer
+          format: int64
+          description: Account-wide usage, including versions and trash
+          example: 212600881152
+        workspace_used_bytes:
+          type: integer
+          format: int64
+          example: 96636764160
+        percent_used:
+          type: number
+          example: 49.5
+        state:
+          type: string
+          enum: [ok, warning, blocked]
+          description: warning from 90%, blocked at 100%
+          example: ok
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: quota_exceeded
+        message:
+          type: string
+          example: This upload would exceed the account's storage quota.

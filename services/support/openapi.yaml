@@ -1,0 +1,558 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Support API
+  version: 2.1.0
+  description: >
+    Internal API of the Support service: tickets, replies, escalation,
+    first-response SLA status and reply macros. All data is fictional.
+  contact:
+    name: Customer Support
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: Tickets
+  - name: Escalation
+  - name: Macros
+paths:
+  /v2/support/tickets:
+    get:
+      tags: [Tickets]
+      operationId: listTickets
+      summary: List tickets, newest first
+      parameters:
+        - name: account_id
+          in: query
+          schema:
+            type: string
+          example: acc_7F3K9Q2M
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TicketStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/Priority'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ticket'
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    example: null
+    post:
+      tags: [Tickets]
+      operationId: createTicket
+      summary: Create a ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreate'
+      responses:
+        '201':
+          description: Ticket created with status new
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v2/support/tickets/{ticket_id}:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+    get:
+      tags: [Tickets]
+      operationId: getTicket
+      summary: Get one ticket
+      responses:
+        '200':
+          description: The ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Tickets]
+      operationId: updateTicket
+      summary: Change status, priority or assignee
+      description: >
+        Any agent can raise a priority. Lowering a ticket from P1 needs a
+        support team lead and returns 403 otherwise.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdate'
+            example:
+              status: pending
+      responses:
+        '200':
+          description: The updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '403':
+          description: The caller may not make this change
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: team_lead_required
+                message: Lowering a P1 ticket needs a support team lead.
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/support/tickets/{ticket_id}/replies:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+    post:
+      tags: [Tickets]
+      operationId: createReply
+      summary: Add a public reply or an internal note
+      description: >
+        The first public reply from an agent stops the first-response clock
+        and moves the ticket from new to open. Replies with unfilled macro
+        placeholders are rejected with 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplyCreate'
+      responses:
+        '201':
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reply'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v2/support/tickets/{ticket_id}/escalate:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+    post:
+      tags: [Escalation]
+      operationId: escalateTicket
+      summary: Escalate a ticket to Tier 2, engineering or a team lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalationRequest'
+      responses:
+        '200':
+          description: The escalation that was recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Escalation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/support/tickets/{ticket_id}/reopen:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+    post:
+      tags: [Tickets]
+      operationId: reopenTicket
+      summary: Reopen a closed ticket within 14 days of closing
+      responses:
+        '200':
+          description: The ticket, now open
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '409':
+          description: The 14-day reopen window has passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: reopen_window_passed
+                message: This ticket was closed more than 14 days ago. Create a new ticket.
+  /v2/support/tickets/{ticket_id}/sla:
+    parameters:
+      - $ref: '#/components/parameters/TicketId'
+    get:
+      tags: [Escalation]
+      operationId: getTicketSla
+      summary: Get the first-response SLA state of a ticket
+      responses:
+        '200':
+          description: SLA target, due time and breach flag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlaStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/support/macros:
+    get:
+      tags: [Macros]
+      operationId: listMacros
+      summary: List published reply macros
+      responses:
+        '200':
+          description: All published macros
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Macro'
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key with the prefix `acme_live_` or `acme_test_`.
+  parameters:
+    TicketId:
+      name: ticket_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^SUP-\d{5}$'
+      example: SUP-58213
+  responses:
+    NotFound:
+      description: Ticket not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: No ticket SUP-99999.
+    Unprocessable:
+      description: The request is valid JSON but breaks a support rule
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: unfilled_placeholder
+            message: The reply still contains {{refund_amount}}.
+  schemas:
+    Priority:
+      type: string
+      enum: [P1, P2, P3, P4]
+      example: P3
+    TicketStatus:
+      type: string
+      enum: [new, open, pending, on_hold, closed]
+      example: open
+    Plan:
+      type: string
+      enum: [free, starter, pro, business, enterprise]
+      example: business
+    Channel:
+      type: string
+      enum: [email, chat, phone, help_center]
+      example: email
+    Ticket:
+      type: object
+      required: [ticket_id, account_id, subject, status, priority, channel, tier, created_at]
+      properties:
+        ticket_id:
+          type: string
+          example: SUP-58213
+        account_id:
+          type: string
+          example: acc_7F3K9Q2M
+        workspace_id:
+          type: string
+          nullable: true
+          example: ws_4H8P2L
+        plan:
+          $ref: '#/components/schemas/Plan'
+        subject:
+          type: string
+          example: Uploads over 1 GB fail in one workspace
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        channel:
+          $ref: '#/components/schemas/Channel'
+        tier:
+          type: string
+          enum: [tier_1, tier_2, engineering, on_call_engineer]
+          example: tier_1
+        service:
+          type: string
+          description: Service the problem belongs to, if known.
+          nullable: true
+          example: files
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-23T09:00:00-06:00'
+        first_reply_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-23T10:12:00-06:00'
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+    TicketCreate:
+      type: object
+      required: [account_id, subject, body, channel]
+      properties:
+        account_id:
+          type: string
+          example: acc_7F3K9Q2M
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        subject:
+          type: string
+          maxLength: 200
+          example: Uploads over 1 GB fail in one workspace
+        body:
+          type: string
+          example: Since this morning every upload above 1 GB stops at 80 percent.
+        channel:
+          $ref: '#/components/schemas/Channel'
+        signals:
+          $ref: '#/components/schemas/TicketSignals'
+    TicketSignals:
+      type: object
+      description: Impact facts used to suggest a priority.
+      properties:
+        kind:
+          type: string
+          enum: [incident, question, how_to, feature_request]
+          example: incident
+        service_down:
+          type: boolean
+          example: false
+        data_loss:
+          type: boolean
+          example: false
+        major_feature:
+          type: boolean
+          example: true
+        users_affected:
+          type: string
+          enum: [one, some, many]
+          example: some
+        workaround:
+          type: string
+          enum: [none, hard, easy]
+          example: easy
+    TicketUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        assignee_role:
+          type: string
+          enum: [support_agent, support_team_lead]
+          example: support_agent
+        service:
+          type: string
+          example: files
+    ReplyCreate:
+      type: object
+      required: [body, public]
+      properties:
+        body:
+          type: string
+          example: Thanks for the details. Our engineers have confirmed the problem and I will update you by tomorrow.
+        public:
+          type: boolean
+          description: false creates an internal note that the customer cannot see.
+          example: true
+        macro_ids:
+          type: array
+          maxItems: 2
+          items:
+            type: string
+          example: [bug-confirmed-on-hold]
+        set_status:
+          $ref: '#/components/schemas/TicketStatus'
+    Reply:
+      type: object
+      properties:
+        reply_id:
+          type: string
+          example: rpl_3T8W6Z1B
+        ticket_id:
+          type: string
+          example: SUP-58213
+        author_type:
+          type: string
+          enum: [customer, agent, system]
+          example: agent
+        public:
+          type: boolean
+          example: true
+        body:
+          type: string
+          example: Thanks for the details. Our engineers have confirmed the problem and I will update you by tomorrow.
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-23T10:12:00-06:00'
+    EscalationRequest:
+      type: object
+      required: [target, reason]
+      properties:
+        target:
+          type: string
+          enum: [tier_2, engineering, team_lead_review]
+          example: engineering
+        reason:
+          type: string
+          enum: [threshold_passed, confirmed_bug, customer_request, agent_judgement]
+          example: confirmed_bug
+        service:
+          type: string
+          description: Required when target is engineering.
+          example: files
+        note:
+          type: string
+          example: Reproduced on two workspaces in us-east.
+    Escalation:
+      type: object
+      properties:
+        ticket_id:
+          type: string
+          example: SUP-58213
+        target:
+          type: string
+          example: engineering
+        owning_team:
+          type: string
+          nullable: true
+          example: Storage Platform
+        slack_channel:
+          type: string
+          nullable: true
+          example: '#team-storage'
+        jira_issue_key:
+          type: string
+          nullable: true
+          example: STOR-1482
+        review_due_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        escalated_at:
+          type: string
+          format: date-time
+          example: '2026-11-23T11:40:00-06:00'
+    SlaStatus:
+      type: object
+      properties:
+        ticket_id:
+          type: string
+          example: SUP-58213
+        plan:
+          $ref: '#/components/schemas/Plan'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        target_minutes:
+          type: integer
+          nullable: true
+          description: null means best effort (Free plan).
+          example: 480
+        clock:
+          type: string
+          enum: [business, always]
+          example: business
+        first_response_due_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-23T17:00:00-06:00'
+        first_reply_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-23T10:12:00-06:00'
+        breached:
+          type: boolean
+          example: false
+        tier_2_due_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-24T09:00:00-06:00'
+    Macro:
+      type: object
+      properties:
+        macro_id:
+          type: string
+          example: billing-refund-approved
+        title:
+          type: string
+          example: Refund approved
+        body:
+          type: string
+          example: Hi {{customer_first_name}}, we have refunded {{refund_amount}} for invoice {{invoice_id}}. It will appear on your statement within 5-10 business days.
+        placeholders:
+          type: array
+          items:
+            type: string
+          example: [customer_first_name, refund_amount, invoice_id]
+        last_reviewed:
+          type: string
+          format: date
+          example: '2026-11-26'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: Ticket not found.

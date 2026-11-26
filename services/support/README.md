@@ -21,6 +21,18 @@ The Support team and tooling handle customer questions, incidents and escalation
 ## Docs in this service
 
 - `docs/sla-and-escalation.md` – channels, response times, priorities, escalation paths
+- `docs/ticket-lifecycle.md` – ticket statuses, reminders, closing, reopening and merging
+- `docs/macros-and-tone.md` – how agents write replies, available macros and placeholders
+- `docs/on-call-handoff.md` – on-call shifts, paging and shift handoff notes
+
+## Code in this service
+
+- `acme_support/sla.py` – first-response targets by plan and priority, business-hours arithmetic, breach check
+- `acme_support/priority.py` – P1–P4 classification rules and who may change a priority
+- `acme_support/escalation.py` – tier routing, escalation thresholds and owning engineering teams
+- `openapi.yaml` – OpenAPI 3.0 spec for the `/v2/support` endpoints
+- `config/default.yaml` – default service configuration (targets, timeouts, feature flags, per-region settings)
+- `tests/` – unit tests; run `python -m unittest discover -s tests` from this folder
 
 ## Owners
 

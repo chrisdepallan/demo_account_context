@@ -2,7 +2,7 @@
 
 ## Which languages and versions do Acme Cloud services use?
 
-Every Acme Cloud service is written in Python **3.11** or later and uses the **standard library only**. No third-party packages are imported by service code or by tests. The rule keeps every service runnable on a clean machine and keeps the supply chain small. Repository tools such as `tools/run_tests.py` follow the same rule.
+Every Acme Cloud service is written in Python **3.12** or later and uses the **standard library only**. No third-party packages are imported by service code or by tests. The rule keeps every service runnable on a clean machine and keeps the supply chain small. Repository tools such as `tools/run_tests.py` follow the same rule.
 
 ## How is Python code formatted?
 

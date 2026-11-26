@@ -39,7 +39,7 @@ Read these documents in the first week, in this order:
 
 ## How do I set up a development machine?
 
-1. Install Python **3.11** or later and Git. The services use the Python standard library only, so there is nothing to install with a package manager.
+1. Install Python **3.12** or later and Git. The services use the Python standard library only, so there is nothing to install with a package manager.
 2. Clone the repository and create a branch. Branch naming rules are in `docs/engineering/release-process.md`.
 3. Run every service's tests from the repository root.
 

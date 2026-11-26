@@ -1,0 +1,118 @@
+# Support service – default configuration.
+# Values here must match services/support/docs/. Secrets are never stored in
+# this file: each one is referenced by the name of the environment variable
+# that holds it.
+
+service:
+  name: support
+  team: Customer Support
+  slack_channel: "#support-escalations"
+  base_url: https://api.acme-cloud.example
+  base_path: /v2/support
+  help_center_url: https://help.acme-cloud.example
+  status_page_url: https://status.acme-cloud.example
+  inbound_email: support@acme-cloud.example
+  default_region: us-east
+
+server:
+  port: 8443
+  request_timeout_seconds: 10
+  max_attachment_mb: 25
+  max_attachments_per_reply: 10
+
+business_hours:
+  timezone: America/Chicago          # US Central Time
+  days: [mon, tue, wed, thu, fri]
+  open: "08:00"
+  close: "18:00"
+  business_day_hours: 10
+
+# First response targets in minutes. "business" clocks pause outside business
+# hours; "always" clocks run 24/7. Free is best effort (no target).
+first_response_minutes:
+  starter:    {P1: 1440, P2: 2880, P3: 1800, P4: 3000, clock: business}
+  pro:        {P1: 480,  P2: 720,  P3: 600,  P4: 1200, clock: business}
+  business:   {P1: 120,  P2: 240,  P3: 480,  P4: 600,  clock: business}
+  enterprise:
+    P1: {minutes: 30, clock: always}
+    P2: {minutes: 120, clock: always}
+    P3: {minutes: 240, clock: business}
+    P4: {minutes: 600, clock: business}
+
+channels:
+  email: [free, starter, pro, business, enterprise]
+  live_chat: [pro, business, enterprise]       # business hours only
+  phone: [business, enterprise]
+  p1_24x7: [enterprise]
+
+escalation:
+  tier_2_after_business_minutes:
+    P2: 240                          # 4 business hours
+    P3: 600                          # 1 business day
+  p1_page_on_call: true
+  status_incident_within_minutes: 15
+  customer_request_keyword: escalate
+  customer_request_review_business_minutes: 600
+
+ticket_lifecycle:
+  id_format: "SUP-{sequence:05d}"
+  statuses: [new, open, pending, on_hold, closed]
+  pending_reminder_days: 3
+  pending_auto_close_days: 7
+  on_hold_update_business_days: 5
+  reopen_window_days: 14
+  satisfaction_survey_after_hours: 24
+  retention_years: 3                 # then anonymized
+
+on_call:
+  page_ack_minutes: 10               # then the secondary agent is paged
+  team_lead_page_after_minutes: 20
+  handoff_times: ["08:00", "18:00"]
+  handoff_overlap_minutes: 15
+  rotation_change: "mon 08:00"
+  paging_api_key_env: SUPPORT_PAGING_API_KEY
+
+macros:
+  max_per_reply: 2
+  target_reply_words: 200
+  review_interval_months: 6
+  archive_unused_after_months: 12
+  block_unfilled_placeholders: true
+
+database:
+  url_env: SUPPORT_DATABASE_URL
+  pool_size: 15
+  statement_timeout_ms: 5000
+
+integrations:
+  jira_base_url_env: SUPPORT_JIRA_BASE_URL
+  jira_token_env: SUPPORT_JIRA_API_TOKEN
+  slack_webhook_env: SUPPORT_SLACK_WEBHOOK_URL
+  mail_signing_key_env: SUPPORT_INBOUND_MAIL_SIGNING_KEY
+
+feature_flags:
+  auto_priority_suggestion: true
+  macro_placeholder_check: true
+  chat_transcript_to_ticket: true
+  ai_reply_drafts: false
+
+# Per-region settings. Ticket data is stored in the region of the workspace.
+# Staffing follows US Central business hours in every region.
+regions:
+  us-east:
+    enabled: true
+    ticket_store: support-tickets-us-east
+    phone_support: true
+  eu-central:
+    enabled: true                    # Business and Enterprise workspaces
+    ticket_store: support-tickets-eu-central
+    phone_support: true
+  ap-south:
+    enabled: true                    # Enterprise workspaces only
+    ticket_store: support-tickets-ap-south
+    phone_support: true
+
+logging:
+  level: info
+  format: json
+  redact_fields: [requester_email, reply_body]

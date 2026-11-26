@@ -53,7 +53,7 @@ psql "$PLATFORM_DB_ADMIN_URL" -h accounts-db-standby.eu-central.internal.acme-cl
 6. Check login, the API, file download and file upload with a test workspace in the affected region.
 7. Watch the event bus consumers catch up. Search results, notifications and webhooks are delayed until the consumers have caught up.
 
-The targets for a region failover are a recovery time of **60 minutes** and a data loss window of at most **5 minutes**.
+The targets for a manual region failover with this runbook are a recovery time of **60 minutes** and a data loss window of at most **5 minutes**. Automatic promotion of a single database standby after the loss of one availability zone has tighter targets: a recovery time of **5 minutes** and no lost transactions. Rebuilding a whole lost region has a recovery time target of **4 hours**. These objectives are defined in `docs/architecture/multi-region-and-data-residency.md`.
 
 ## Escalation
 
