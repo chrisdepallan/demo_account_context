@@ -1,0 +1,2 @@
+# Store text with LF line endings so generated files are identical on every OS
+* text=auto eol=lf

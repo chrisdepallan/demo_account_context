@@ -28,6 +28,18 @@ The Billing service handles subscriptions, pricing, invoices, payment methods, t
 - `docs/payment-methods.md` – accepted methods, failed payments
 - `docs/invoices-and-taxes.md` – invoices, sales tax and VAT
 - `docs/refunds.md` – refund policy and how to issue refunds
+- `docs/proration-and-credits.md` – how mid-cycle changes are prorated and how account credit works
+- `docs/subscription-changes.md` – upgrades, downgrades, seat changes, billing cycle switches, cancelling
+
+## Code in this service
+
+- `acme_billing/pricing.py` – price table per plan, billing cycle and currency; discounts; invoice subtotal
+- `acme_billing/proration.py` – prorated charges and credits for seat and plan changes; applying account credit
+- `acme_billing/dunning.py` – failed-payment schedule (Days 0, 1, 3, 7, 14 and 44) and account status
+- `acme_billing/refunds.py` – refund eligibility, approval thresholds and SLA service credits
+- `openapi.yaml` – OpenAPI 3.0 spec for the `/v2/billing` endpoints
+- `config/default.yaml` – default service configuration (limits, timeouts, feature flags, per-region settings)
+- `tests/` – unit tests; run `python -m unittest discover -s tests` from this folder
 
 ## Not indexed
 

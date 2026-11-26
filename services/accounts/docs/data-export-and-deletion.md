@@ -42,11 +42,11 @@ Not directly. Members are signed out when an account is closed, so the export pa
 
 | Event | When | What happens |
 |-------|------|--------------|
-| Account closed | Day 0 | Account is `closed`, members are signed out, data is kept |
-| Retention ends | Day 31 | Account is `deleted`, data is erased from primary storage |
+| Account closed | Day of closing | Account is `closed`, members are signed out, data is kept |
+| Retention ends | 30 days after closing (day 31) | Account is `deleted`, data is erased from primary storage |
 | Backups purged | Within a further 35 days | Data is removed from all backups |
 
-Data is kept for **30 days** after closing. On day **31** it is permanently erased from primary storage, and backups are purged within a further **35 days**. All copies are therefore gone at most **66 days** after the account was closed.
+Data is kept for **30 days** after closing. On day **31** it is permanently erased from primary storage, and backups are purged within a further **35 days**. All copies are therefore gone at most **65 days** after the account was closed.
 
 ## Can I ask for deletion sooner than 30 days?
 

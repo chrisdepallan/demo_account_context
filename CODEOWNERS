@@ -1,0 +1,27 @@
+# Fictional owners for the sample repository. Team handles do not exist on GitHub.
+# Later rules take precedence over earlier ones.
+
+*                           @acme-cloud-example/docs-maintainers
+
+/docs/architecture/         @acme-cloud-example/architecture
+/docs/adr/                  @acme-cloud-example/architecture
+/docs/security/             @acme-cloud-example/trust-and-compliance
+/docs/runbooks/             @acme-cloud-example/on-call-leads
+
+/services/accounts/         @acme-cloud-example/accounts-platform
+/services/auth/             @acme-cloud-example/identity
+/services/billing/          @acme-cloud-example/revenue-engineering
+/services/support/          @acme-cloud-example/customer-support
+/services/projects/         @acme-cloud-example/work-management
+/services/files/            @acme-cloud-example/storage-platform
+/services/notifications/    @acme-cloud-example/messaging
+/services/webhooks/         @acme-cloud-example/developer-platform
+/services/search/           @acme-cloud-example/search-and-discovery
+/services/audit-log/        @acme-cloud-example/trust-and-compliance
+/services/integrations/     @acme-cloud-example/ecosystem
+/services/analytics/        @acme-cloud-example/data-platform
+
+/tools/                     @acme-cloud-example/developer-platform
+/.github/                   @acme-cloud-example/developer-platform
+/reports/                   @acme-cloud-example/developer-platform
+/data/                      @acme-cloud-example/data-platform

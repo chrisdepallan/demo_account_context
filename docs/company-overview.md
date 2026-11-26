@@ -26,10 +26,20 @@ The region is chosen when a workspace is created and cannot be changed afterward
 - **Billing** – pricing, invoices, payment methods, refunds, taxes. See `services/billing/README.md`.
 - **Auth** – login, passwords, MFA, SSO, API keys. See `services/auth/README.md`.
 - **Support** – channels, SLAs, escalation. See `services/support/README.md`.
+- **Projects** – projects, tasks, boards, comments, automation. See `services/projects/README.md`.
+- **Files** – file storage, uploads, versions, sharing links, storage quotas. See `services/files/README.md`.
+- **Notifications** – email, in-app and push notifications, digests, preferences. See `services/notifications/README.md`.
+- **Webhooks** – outbound event webhooks, signing, retries. See `services/webhooks/README.md`.
+- **Search** – full-text search across projects, tasks and files. See `services/search/README.md`.
+- **Audit Log** – record of security-relevant actions, export, SIEM streaming. See `services/audit-log/README.md`.
+- **Integrations** – app directory and integrations with Slack, GitHub, Jira and Google Workspace. See `services/integrations/README.md`.
+- **Analytics** – dashboards, metrics, scheduled reports and exports. See `services/analytics/README.md`.
+
+How the services fit together is described in `docs/architecture/system-overview.md`.
 
 ## Status page and uptime target
 
 - Public status page: `https://status.acme-cloud.example`
 - Uptime target: 99.9% monthly on Starter and Pro, 99.95% on Business, 99.99% on Enterprise.
 
-Last reviewed: 2026-11-19
+Last reviewed: 2026-11-26

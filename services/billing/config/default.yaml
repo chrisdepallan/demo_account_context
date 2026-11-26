@@ -1,0 +1,131 @@
+# Billing service – default configuration.
+# Values here must match services/billing/docs/. Environment-specific files
+# override these defaults. Secrets are never stored in this file: each one is
+# referenced by the name of the environment variable that holds it.
+
+service:
+  name: billing
+  team: Revenue Engineering
+  slack_channel: "#team-billing"
+  base_url: https://api.acme-cloud.example
+  base_path: /v2/billing
+  default_region: us-east
+
+server:
+  port: 8443
+  request_timeout_seconds: 15
+  shutdown_grace_seconds: 30
+  max_request_body_kb: 256
+
+# Roles allowed to call each group of endpoints.
+access:
+  customer_roles: [owner, billing_admin]
+  refund_and_credit_roles: [support_agent, support_team_lead, billing_manager]
+
+pricing:
+  currencies: [USD, EUR, GBP, INR]
+  default_currency: USD
+  annual_months_charged: 10          # 2 months free on annual billing
+  price_change_notice_days: 60
+  enterprise_min_seats: 50
+  max_seats:
+    starter: 10
+    pro: 100
+    business: 500
+  monthly_price_per_seat:
+    starter: {USD: 8, EUR: 8, GBP: 7, INR: 549}
+    pro: {USD: 15, EUR: 14, GBP: 12, INR: 999}
+    business: {USD: 29, EUR: 27, GBP: 24, INR: 1999}
+  discounts:                         # only one discount per account
+    nonprofit_percent: 50
+    startup_percent: 30
+    startup_months: 12
+    education_free_pro_seats: 10
+
+proration:
+  unit: day                          # the day of the change counts as remaining
+  rounding: half_up
+  decimal_places: 2
+  seat_increase: charge_immediately
+  seat_decrease: credit_next_invoice
+  upgrade: charge_immediately
+  downgrade: end_of_period
+
+credits:
+  expire: false
+  apply_before_payment_method: true
+  removed_days_after_account_closure: 30
+
+dunning:
+  retry_days: [1, 3, 7, 14]
+  grace_period_days: 14
+  read_only_day: 14
+  downgrade_to_free_day: 44
+  restore_access_within_minutes: 5
+  renewal_reminder_days: [30, 7]     # annual plans only
+
+refunds:
+  annual_refund_window_days: 30
+  issue_within_business_days: 2
+  approval_limits_usd:
+    support_agent: 500
+    support_team_lead: 5000          # above this: billing manager
+  goodwill_per_account_per_months: 12
+  sla_credit_request_window_days: 30
+  sla_credit_cap_percent: 50
+  chargeback_dispute_fee_usd: 15
+
+invoices:
+  id_format: "INV-{year}-{sequence:06d}"
+  retention_years: 7
+  reissue_window_months: 12
+  max_extra_billing_contacts: 5
+  pro_forma_valid_days: 30
+
+payment_processor:
+  timeout_seconds: 10
+  max_attempts: 3
+  backoff_seconds: [1, 4, 10]
+  api_key_env: BILLING_PROCESSOR_API_KEY
+  webhook_secret_env: BILLING_PROCESSOR_WEBHOOK_SECRET
+
+database:
+  url_env: BILLING_DATABASE_URL
+  pool_size: 20
+  statement_timeout_ms: 5000
+
+dependencies:
+  accounts_base_url: https://api.acme-cloud.example/v2/accounts
+  accounts_timeout_seconds: 5
+  internal_token_env: BILLING_INTERNAL_SERVICE_TOKEN
+
+feature_flags:
+  proration_preview: true
+  self_serve_cycle_switch: true
+  paypal_enabled: true
+  credits_ledger_export: false
+
+# Per-region settings. A workspace region never changes after creation.
+regions:
+  us-east:
+    enabled: true
+    payment_methods: [card, paypal, ach, invoice_net_30]
+    tax_engine: us_sales_tax
+    bank_transfer_min_annual_total: 1000   # USD, ACH
+    bank_transfer_clearing_business_days: "3-5"
+  eu-central:
+    enabled: true
+    payment_methods: [card, paypal, sepa, invoice_net_30]
+    tax_engine: eu_vat                     # VAT IDs are validated against VIES
+    bank_transfer_min_annual_total: 1000   # EUR, SEPA
+    bank_transfer_clearing_business_days: "1-3"
+  ap-south:
+    enabled: true
+    payment_methods: [card, upi, invoice_net_30]   # PayPal is not available in India
+    tax_engine: in_gst
+    gst_percent: 18
+
+logging:
+  level: info
+  format: json
+  redact_fields: [payment_method_token, billing_email]

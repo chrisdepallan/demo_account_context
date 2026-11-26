@@ -24,6 +24,17 @@ The Auth service handles how people and programs prove who they are: email/passw
 - `docs/passwords-and-mfa.md` – password rules, resets, lockouts, MFA
 - `docs/sso.md` – SAML/OIDC setup and troubleshooting
 - `docs/api-keys.md` – creating, rotating and revoking API keys
+- `docs/sessions-and-devices.md` – session length, signed-in devices, signing out remotely
+- `docs/scim-provisioning.md` – SCIM setup, tokens, deactivation and role mapping
+
+## Code in this service
+
+- `acme_auth/password_policy.py` – password rules, history, forced expiry and reset links
+- `acme_auth/lockout.py` – failed-login lockout rules
+- `acme_auth/api_keys.py` – key prefixes, scopes, expiry and per-workspace limits
+- `openapi.yaml` – OpenAPI 3.0 description of the `/v2/auth` endpoints
+- `config/default.yaml` – default service configuration (limits, timeouts, feature flags, regions)
+- `tests/` – unit tests; run `python -m unittest discover -s tests` from this folder
 
 ## Owners
 

@@ -28,6 +28,17 @@ The Accounts service owns the customer account: sign-up, plans, workspaces, memb
 - `docs/account-lifecycle.md` – states, closing, restoring, deletion
 - `docs/plans-and-limits.md` – limits and features per plan
 - `docs/members-and-roles.md` – inviting, removing and role permissions
+- `docs/workspaces.md` – creating, renaming, archiving and deleting workspaces, regions
+- `docs/data-export-and-deletion.md` – workspace exports, deletion timeline, personal data erasure
+
+## Code in this service
+
+- `acme_accounts/lifecycle.py` – account state machine, legal transitions and retention windows
+- `acme_accounts/plans.py` – plan limits table and limit checks
+- `acme_accounts/roles.py` – role permission matrix, invitation and ownership-transfer rules
+- `openapi.yaml` – OpenAPI 3.0 description of the `/v2/accounts` endpoints
+- `config/default.yaml` – default service configuration (limits, timeouts, feature flags, regions)
+- `tests/` – unit tests; run `python -m unittest discover -s tests` from this folder
 
 ## Owners
 

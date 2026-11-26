@@ -1,0 +1,21 @@
+[project]
+name = "acme-account-context"
+version = "0.2.0"
+description = "Sample context repository for an MCP documentation server: docs, service modules, tests and reports for the fictional Acme Cloud."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+# Service code and tools use the standard library only.
+# Tests are plain unittest and run with: python tools/run_tests.py
+# They are also discoverable by pytest, one service at a time:
+#   cd services/billing && python -m pytest tests
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["reports", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]

@@ -2,7 +2,7 @@
 
 ## What tools does this repository have?
 
-All tools are plain Python scripts that use the standard library only. They need **Python 3.10 or later** and no installed packages. Run them from the repository root.
+All tools are plain Python scripts that use the standard library only. They need **Python 3.12 or later** and no installed packages. Run them from the repository root.
 
 | Script | What it does |
 |------|------|
@@ -26,6 +26,6 @@ Run `python tools/generate_reports.py --check`. It writes nothing and exits with
 
 ## How do I make the repository larger for load testing?
 
-Run `python tools/generate_reports.py --scale N`. The default scale of **1** covers 12 months and produces about 120 generated files. Each step of scale adds another 12 months of history: 24 more incident postmortems, 20 more weekly test runs, 12 more performance reports, 12 more release notes and 4 more quarters of reviews. A scale of **10** produces about 900 generated files. Running with a smaller scale afterwards does not delete the extra files, so remove `reports/` and `data/` first when scaling down.
+Run `python tools/generate_reports.py --scale N`. The default scale of **1** covers 12 months and produces about 115 generated files. Each step of scale adds another 12 months of history: 24 more incident postmortems, 20 more weekly test runs, 12 more performance reports, 12 more release notes and 4 more quarters of reviews. A scale of **10** produces about 830 generated files. Running with a smaller scale afterwards does not delete the extra files, so remove `reports/` and `data/` first when scaling down.
 
 Last reviewed: 2026-11-26
