@@ -1,0 +1,118 @@
+# Default configuration for the Integrations service.
+# Values here must match the docs in services/integrations/docs/.
+# No secrets in this file: secrets are named as environment variables only.
+
+service:
+  name: integrations
+  api_base_path: /v2/integrations
+  default_region: us-east
+  owner_team: Ecosystem
+
+# Active + suspended installs allowed per workspace. null means unlimited.
+install_limits:
+  free: 2
+  starter: 5
+  pro: 20
+  business: 50
+  enterprise: null
+
+# App kinds each plan may install.
+allowed_app_kinds:
+  free: [first_party]
+  starter: [first_party, partner]
+  pro: [first_party, partner]
+  business: [first_party, partner, private]
+  enterprise: [first_party, partner, private]
+
+private_apps:
+  max_per_account: 10
+
+installs:
+  pending_expiry_minutes: 30        # unfinished OAuth flow is revoked after this
+  suspend_after_consecutive_failures: 5
+  auto_revoke_suspended_after_days: 60
+  link_retention_after_revoke_days: 30
+  token_delete_deadline_seconds: 60
+  member_request_expiry_days: 14
+  roles_allowed_to_manage: [owner, admin]
+
+oauth:
+  authorize_url: https://auth.acme-cloud.example/oauth/authorize
+  token_url: https://auth.acme-cloud.example/oauth/token
+  pkce_required: true
+  authorization_code_ttl_seconds: 600     # 10 minutes, single use
+  access_token_ttl_seconds: 3600          # 1 hour
+  refresh_token_ttl_days: 90              # rotated on every use
+  reconsent_expiry_days: 14
+  # Names of the environment variables that hold each first-party client secret.
+  client_secret_env:
+    slack: INTEGRATIONS_SLACK_CLIENT_SECRET
+    github: INTEGRATIONS_GITHUB_CLIENT_SECRET
+    jira: INTEGRATIONS_JIRA_CLIENT_SECRET
+    google-workspace: INTEGRATIONS_GOOGLE_CLIENT_SECRET
+  token_encryption_key_env: INTEGRATIONS_TOKEN_ENCRYPTION_KEY
+
+scopes:
+  max_per_install: 6
+  restricted: [members:write]             # Owner approval only
+  never_grantable: [billing:read]
+  first_party_defaults:
+    slack: [projects:read, projects:write, members:read]
+    github: [projects:read, projects:write]
+    jira: [projects:read, projects:write, members:read]
+    google-workspace: [files:read, files:write, members:read]
+
+sync:
+  incremental_interval_seconds: 300       # every 5 minutes
+  full_interval_hours: 24
+  manual_cooldown_seconds: 900            # one manual sync per 15 minutes
+  page_size: 200
+  cursor_ttl_days: 7
+  conflict_window_seconds: 60
+  default_source_of_truth: acme
+  propagate_deletes: false                # deleted partners are unlinked, never deleted
+  retry:
+    max_attempts: 6
+    base_delay_seconds: 60                # 1, 2, 4, 8, 16 minutes
+    multiplier: 2
+  request_timeout_seconds: 30
+  connect_timeout_seconds: 5
+
+apps:
+  slack:
+    max_channels_per_project: 5
+    notification_grouping_seconds: 120
+    due_reminder_hours_before: 24
+    find_command_max_results: 5
+  github:
+    max_repositories_per_install: 100
+    complete_task_on_merge_default: false
+
+feature_flags:
+  private_apps: true
+  member_install_requests: true
+  jira_two_way_sync: true
+  google_calendar_due_dates: true
+  first_party_requests_count_toward_rate_limit: false
+
+# Per-region settings. A workspace's installs and tokens stay in its region.
+regions:
+  us-east:
+    enabled: true
+    sync_workers: 24
+    queue_url_env: INTEGRATIONS_QUEUE_URL_US_EAST
+    database_url_env: INTEGRATIONS_DATABASE_URL_US_EAST
+  eu-central:
+    enabled: true
+    sync_workers: 12
+    queue_url_env: INTEGRATIONS_QUEUE_URL_EU_CENTRAL
+    database_url_env: INTEGRATIONS_DATABASE_URL_EU_CENTRAL
+  ap-south:
+    enabled: true
+    sync_workers: 6
+    queue_url_env: INTEGRATIONS_QUEUE_URL_AP_SOUTH
+    database_url_env: INTEGRATIONS_DATABASE_URL_AP_SOUTH
+
+logging:
+  level: info
+  redact_fields: [access_token, refresh_token, authorization_code, client_secret]

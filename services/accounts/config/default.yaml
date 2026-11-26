@@ -1,0 +1,133 @@
+# Default configuration for the Accounts service (Accounts Platform, #team-accounts).
+# Values here must match the docs in services/accounts/docs/.
+# No secrets in this file: secrets are read from the named environment variables.
+
+service:
+  name: accounts
+  api_base_url: https://api.acme-cloud.example/v2/accounts
+  port: 8080
+  log_level: info
+  request_timeout_seconds: 10
+  shutdown_grace_seconds: 30
+
+database:
+  url_env: ACCOUNTS_DATABASE_URL        # connection string, from the environment
+  pool_size: 20
+  statement_timeout_ms: 5000
+
+signup:
+  email_verification_link_hours: 24     # verification link validity
+  one_account_per_owner_email: true
+  trial_plan: pro
+  trial_days: 14
+
+lifecycle:
+  grace_period_days: 14                 # past_due before read_only
+  retention_days: 30                    # closed before deleted
+  backup_purge_days: 35                 # backups purged after deletion
+  expedited_deletion_business_days: 3
+  inactive_free_account:
+    first_warning_after_months: 12
+    second_warning_after_days: 30
+    close_after_further_days: 30
+
+members:
+  invite_batch_max: 50
+  invitation_expiry_days: 7
+  ownership_transfer_accept_days: 7
+  guests_per_paid_seat: 5
+  profile_erasure_days: 30
+
+workspaces:
+  name_min_length: 3
+  name_max_length: 64
+  deleted_restore_days: 30
+  default_region: us-east
+
+exports:
+  max_concurrent_per_workspace: 1
+  download_link_days: 7
+  max_duration_hours: 24
+
+storage:
+  warning_threshold_percent: 90         # email to Owner and Admins
+  block_threshold_percent: 100          # new uploads blocked
+  storage_pack_gb: 100
+  storage_pack_usd_per_month: 10
+
+# Plan limits. null means unlimited or not applicable.
+plans:
+  free:
+    max_members: 3
+    workspaces: 1
+    storage_gb_total: 2
+    max_upload_mb: 250
+    version_history_days: 7
+    api_requests_per_minute: 100
+    regions: [us-east]
+  starter:
+    max_members: 10
+    workspaces: 1
+    storage_gb_per_seat: 10
+    max_upload_mb: 250
+    version_history_days: 30
+    api_requests_per_minute: 300
+    regions: [us-east]
+  pro:
+    max_members: 100
+    workspaces: 3
+    storage_gb_per_seat: 50
+    max_upload_mb: 5120
+    version_history_days: 180
+    api_requests_per_minute: 1000
+    regions: [us-east]
+  business:
+    max_members: 500
+    workspaces: 10
+    storage_gb_per_seat: 200
+    max_upload_mb: 5120
+    version_history_days: 365
+    api_requests_per_minute: 3000
+    regions: [us-east, eu-central]
+  enterprise:
+    max_members: null
+    workspaces: null
+    min_seats: 50
+    storage_gb_per_seat: 1024
+    max_upload_mb: 5120
+    version_history_days: null
+    api_requests_per_minute: 10000
+    regions: [us-east, eu-central, ap-south]
+
+feature_flags:
+  workspace_archiving: true
+  expedited_deletion: true
+  bulk_invite_csv: false                # not launched
+  self_service_region_move: false       # regions cannot be changed after creation
+
+regions:
+  us-east:
+    location: Virginia, USA
+    default: true
+    plans: [free, starter, pro, business, enterprise]
+    database_url_env: ACCOUNTS_DATABASE_URL_US_EAST
+    export_bucket: acme-accounts-exports-us-east
+    replicas: 6
+  eu-central:
+    location: Frankfurt, Germany
+    default: false
+    plans: [business, enterprise]
+    database_url_env: ACCOUNTS_DATABASE_URL_EU_CENTRAL
+    export_bucket: acme-accounts-exports-eu-central
+    replicas: 4
+  ap-south:
+    location: Mumbai, India
+    default: false
+    plans: [enterprise]
+    database_url_env: ACCOUNTS_DATABASE_URL_AP_SOUTH
+    export_bucket: acme-accounts-exports-ap-south
+    replicas: 2
+
+notifications:
+  from_address: support@acme-cloud.example
+  email_api_key_env: ACCOUNTS_EMAIL_API_KEY

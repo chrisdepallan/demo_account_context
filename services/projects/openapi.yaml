@@ -1,0 +1,562 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Projects API
+  version: "2.0.0"
+  description: >
+    Projects, tasks and comments for Acme Cloud workspaces (fictional).
+    Requires an API key with the `projects:read` or `projects:write` scope.
+    Free accounts cannot use the API.
+  contact:
+    name: Work Management team
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+security:
+  - apiKey: []
+tags:
+  - name: projects
+  - name: tasks
+  - name: comments
+paths:
+  /v2/projects/{workspace_id}/projects:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      tags: [projects]
+      operationId: listProjects
+      summary: List projects in a workspace
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [active, archived, trashed]
+            default: active
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: A page of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectList"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    post:
+      tags: [projects]
+      operationId: createProject
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+            example:
+              name: Website relaunch
+              visibility: workspace
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: The workspace has reached its active project limit (`project_limit_reached`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: project_limit_reached
+                message: This workspace has reached the limit of 50 active projects on the Starter plan.
+  /v2/projects/{workspace_id}/projects/{project_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [projects]
+      operationId: getProject
+      summary: Get project details
+      responses:
+        "200":
+          description: The project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [projects]
+      operationId: updateProject
+      summary: Rename, archive or change the visibility of a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+            example:
+              state: archived
+      responses:
+        "200":
+          description: The updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [projects]
+      operationId: deleteProject
+      summary: Move a project to the trash (managers only)
+      description: The project can be restored for 30 days, then it is permanently deleted.
+      responses:
+        "204":
+          description: Project moved to the trash
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v2/projects/{workspace_id}/projects/{project_id}/tasks:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [tasks]
+      operationId: listTasks
+      summary: List tasks in a project
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/TaskStatus"
+        - name: assignee
+          in: query
+          description: Member email address
+          schema:
+            type: string
+            format: email
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: A page of tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [tasks]
+      operationId: createTask
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+            example:
+              title: Draft the launch checklist
+              priority: high
+              due_date: "2026-12-10"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: The project has reached 10,000 tasks (`task_limit_reached`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v2/projects/{workspace_id}/tasks/{task_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/TaskId"
+    patch:
+      tags: [tasks]
+      operationId: updateTask
+      summary: Update a task, including its status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+            example:
+              status: in_review
+      responses:
+        "200":
+          description: The updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The status change is not allowed by the workflow (`invalid_transition`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: invalid_transition
+                message: A task cannot move from backlog to done.
+  /v2/projects/{workspace_id}/tasks/{task_id}/comments:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      tags: [comments]
+      operationId: addComment
+      summary: Add a comment to a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreate"
+            example:
+              body: Checklist is ready for review.
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key starting with `acme_live_` (production) or `acme_test_` (sandbox).
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^ws_[A-Z0-9]{6}$"
+      example: ws_4H8P2L
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^prj_[A-Z0-9]{8}$"
+      example: prj_8K2M4QX7
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^tsk_[A-Z0-9]{8}$"
+      example: tsk_3F9H2L6P
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      description: Opaque cursor from `next_cursor` of the previous page
+      schema:
+        type: string
+  responses:
+    Forbidden:
+      description: The caller's role or project access level does not allow this action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: forbidden
+            message: Manager access is required to delete a project.
+    NotFound:
+      description: The project or task does not exist or is not visible to the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: not_found
+            message: Project prj_8K2M4QX7 was not found.
+    RateLimited:
+      description: Account API rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+          example: 12
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: rate_limited
+            message: Too many requests.
+  schemas:
+    TaskStatus:
+      type: string
+      enum: [backlog, todo, in_progress, in_review, done, cancelled]
+      example: in_progress
+    Priority:
+      type: string
+      enum: [low, medium, high, urgent]
+      default: medium
+      example: high
+    Project:
+      type: object
+      required: [id, workspace_id, name, visibility, state, created_at]
+      properties:
+        id:
+          type: string
+          example: prj_8K2M4QX7
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        name:
+          type: string
+          maxLength: 120
+          example: Website relaunch
+        visibility:
+          type: string
+          enum: [workspace, private]
+          example: workspace
+        state:
+          type: string
+          enum: [active, archived, trashed]
+          example: active
+        task_count:
+          type: integer
+          maximum: 10000
+          example: 42
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-02T09:15:00Z"
+    ProjectCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        visibility:
+          type: string
+          enum: [workspace, private]
+          default: workspace
+        template_id:
+          type: string
+          description: Optional template to copy columns, fields and starter tasks from
+          example: tpl_sprint_board
+    ProjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        visibility:
+          type: string
+          enum: [workspace, private]
+        state:
+          type: string
+          enum: [active, archived]
+    ProjectList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        next_cursor:
+          type: string
+          nullable: true
+          example: null
+    Task:
+      type: object
+      required: [id, project_id, title, status, priority, created_at]
+      properties:
+        id:
+          type: string
+          example: tsk_3F9H2L6P
+        project_id:
+          type: string
+          example: prj_8K2M4QX7
+        parent_task_id:
+          type: string
+          nullable: true
+          example: null
+        title:
+          type: string
+          maxLength: 255
+          example: Draft the launch checklist
+        description:
+          type: string
+          maxLength: 50000
+          example: Cover DNS, redirects and analytics.
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        assignees:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: email
+          example: ["member@customer.example"]
+        labels:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+          example: ["launch"]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-12-10"
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-20T14:02:11Z"
+    TaskCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 50000
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        parent_task_id:
+          type: string
+          example: tsk_3F9H2L6P
+        assignees:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: email
+        due_date:
+          type: string
+          format: date
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 50000
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        assignees:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: email
+        due_date:
+          type: string
+          format: date
+          nullable: true
+    TaskList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        next_cursor:
+          type: string
+          nullable: true
+          example: null
+    CommentCreate:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          maxLength: 10000
+    Comment:
+      type: object
+      required: [id, task_id, body, author, created_at]
+      properties:
+        id:
+          type: string
+          example: cmt_5T7W1N9B
+        task_id:
+          type: string
+          example: tsk_3F9H2L6P
+        body:
+          type: string
+          maxLength: 10000
+          example: Checklist is ready for review.
+        author:
+          type: string
+          format: email
+          example: member@customer.example
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-21T08:30:00Z"
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: forbidden
+        message:
+          type: string
+          example: Manager access is required to delete a project.

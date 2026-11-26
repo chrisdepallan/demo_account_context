@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Auth API
+  version: 2.0.0
+  description: >
+    Internal API of the Auth service: login, sessions, password resets and
+    API keys. All data in this file is fictional example data. Key values
+    shown here are placeholders, never working credentials.
+  contact:
+    name: Identity
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+tags:
+  - name: Login
+  - name: Sessions
+  - name: Passwords
+  - name: API keys
+security:
+  - bearerAuth: []
+paths:
+  /v2/auth/login:
+    post:
+      tags: [Login]
+      operationId: login
+      summary: Log in with email and password
+      description: >
+        After 5 failed attempts within 15 minutes the login is locked for
+        15 minutes; after 10 within an hour it is locked for 1 hour.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: member@customer.example
+                password:
+                  type: string
+                  format: password
+                  minLength: 12
+                  maxLength: 128
+                mfa_code:
+                  type: string
+                  description: TOTP, SMS or backup code, when MFA is set up.
+                  example: '000000'
+                client:
+                  type: string
+                  enum: [web, mobile]
+                  default: web
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          description: Wrong email, password or MFA code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: invalid_credentials
+                message: The email or password is incorrect.
+        '423':
+          description: The login is locked after too many failed attempts.
+          headers:
+            Retry-After:
+              description: Seconds until the lock ends.
+              schema:
+                type: integer
+                example: 900
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: login_locked
+                message: Too many failed attempts. Try again in 15 minutes.
+  /v2/auth/logout:
+    post:
+      tags: [Login]
+      operationId: logout
+      summary: End the current session
+      responses:
+        '204':
+          description: Signed out
+  /v2/auth/sessions:
+    get:
+      tags: [Sessions]
+      operationId: listSessions
+      summary: List the caller's active sessions (at most 10)
+      responses:
+        '200':
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    maxItems: 10
+                    items:
+                      $ref: '#/components/schemas/Session'
+  /v2/auth/sessions/{session_id}:
+    delete:
+      tags: [Sessions]
+      operationId: revokeSession
+      summary: Sign out one session
+      description: Revocation takes effect within 60 seconds.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^ses_[A-Z0-9]{10}$'
+          example: ses_8K2M4P9X1B
+      responses:
+        '204':
+          description: Session revoked
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/auth/password-reset:
+    post:
+      tags: [Passwords]
+      operationId: requestPasswordReset
+      summary: Email a password reset link
+      description: >
+        The link is valid for 60 minutes and can be used once. The response
+        is the same whether or not the email belongs to a user.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: member@customer.example
+      responses:
+        '202':
+          description: Request accepted
+  /v2/auth/api-keys:
+    get:
+      tags: [API keys]
+      operationId: listApiKeys
+      summary: List a workspace's API keys (Owner and Admin)
+      description: Returns key metadata only. The full key is never returned after creation.
+      parameters:
+        - name: workspace_id
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^ws_[A-Z0-9]{6}$'
+          example: ws_4H8P2L
+      responses:
+        '200':
+          description: API keys of the workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    maxItems: 25
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [API keys]
+      operationId: createApiKey
+      summary: Create an API key (Owner and Admin, Starter and above)
+      description: A workspace can have up to 25 active keys. The full key is returned only once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreateRequest'
+      responses:
+        '201':
+          description: Key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyWithSecret'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: Unknown scope, expiry not allowed, or the 25-key limit is reached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: key_limit_reached
+                message: The workspace already has 25 active keys.
+  /v2/auth/api-keys/{key_id}/rotate:
+    post:
+      tags: [API keys]
+      operationId: rotateApiKey
+      summary: Rotate an API key
+      description: A new key is issued and the old key keeps working for 24 hours.
+      parameters:
+        - $ref: '#/components/parameters/KeyId'
+      responses:
+        '201':
+          description: Replacement key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyWithSecret'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/auth/api-keys/{key_id}:
+    delete:
+      tags: [API keys]
+      operationId: revokeApiKey
+      summary: Revoke an API key
+      description: Revocation takes effect within 60 seconds.
+      parameters:
+        - $ref: '#/components/parameters/KeyId'
+      responses:
+        '204':
+          description: Key revoked
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Session token or an API key starting with `acme_live_` or `acme_test_`.
+  parameters:
+    KeyId:
+      name: key_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^key_[A-Z0-9]{8}$'
+      example: key_3D7F1G5J
+  responses:
+    Forbidden:
+      description: The caller's role or plan does not allow this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: forbidden
+            message: Only Owners and Admins can manage API keys.
+    NotFound:
+      description: The resource does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: Session ses_8K2M4P9X1B was not found.
+  schemas:
+    Session:
+      type: object
+      required: [id, user_id, client, created_at, expires_at]
+      properties:
+        id:
+          type: string
+          example: ses_8K2M4P9X1B
+        user_id:
+          type: string
+          example: usr_6H1R8T3V
+        client:
+          type: string
+          enum: [web, mobile]
+          example: web
+        device:
+          type: string
+          example: Firefox on Windows
+        approximate_location:
+          type: string
+          example: Austin, US
+        current:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-20T08:00:00Z'
+        last_active_at:
+          type: string
+          format: date-time
+          example: '2026-11-24T16:45:00Z'
+        expires_at:
+          type: string
+          format: date-time
+          description: 14 days (web) or 90 days (mobile) after `last_active_at`.
+          example: '2026-12-08T16:45:00Z'
+    Scope:
+      type: string
+      enum:
+        - projects:read
+        - projects:write
+        - files:read
+        - files:write
+        - members:read
+        - members:write
+        - billing:read
+      example: projects:read
+    ApiKeyCreateRequest:
+      type: object
+      required: [workspace_id, name, scopes]
+      properties:
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        name:
+          type: string
+          example: CI pipeline
+        environment:
+          type: string
+          enum: [live, test]
+          default: live
+          example: test
+        scopes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Scope'
+          example: [projects:read, files:read]
+        expires_in_days:
+          type: integer
+          nullable: true
+          enum: [30, 90, 180, 365, null]
+          description: Null means the key never expires; not allowed when Require key expiry is on.
+          example: 90
+    ApiKey:
+      type: object
+      required: [id, workspace_id, name, prefix, scopes, status, created_at]
+      properties:
+        id:
+          type: string
+          example: key_3D7F1G5J
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        name:
+          type: string
+          example: CI pipeline
+        prefix:
+          type: string
+          enum: [acme_live_, acme_test_]
+          example: acme_test_
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scope'
+          example: [projects:read, files:read]
+        status:
+          type: string
+          enum: [active, rotating, expired, revoked]
+          example: active
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-20T08:00:00Z'
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2027-02-18T08:00:00Z'
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-24T16:45:00Z'
+    ApiKeyWithSecret:
+      allOf:
+        - $ref: '#/components/schemas/ApiKey'
+        - type: object
+          required: [key]
+          properties:
+            key:
+              type: string
+              description: The full key, shown only once. The example is a placeholder.
+              example: acme_test_EXAMPLEKEY000
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: invalid_credentials
+        message:
+          type: string
+          example: The email or password is incorrect.

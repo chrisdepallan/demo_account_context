@@ -1,0 +1,477 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Integrations API
+  version: 2.0.0
+  description: >
+    Internal API for the app directory, OAuth app installs and sync status.
+    All data is fictional. Authenticate with an API key that starts with
+    `acme_live_` (production) or `acme_test_` (sandbox).
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+tags:
+  - name: Apps
+    description: App directory listings
+  - name: Installs
+    description: Apps connected to a workspace
+  - name: Sync
+    description: Sync status and manual resync
+security:
+  - apiKey: []
+paths:
+  /v2/integrations/apps:
+    get:
+      operationId: listApps
+      tags: [Apps]
+      summary: List apps in the app directory
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AppKind'
+        - name: plan
+          in: query
+          required: false
+          description: Only return apps that this plan may install.
+          schema:
+            $ref: '#/components/schemas/Plan'
+      responses:
+        '200':
+          description: Apps in the directory
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/App'
+  /v2/integrations/apps/{app_slug}:
+    get:
+      operationId: getApp
+      tags: [Apps]
+      summary: Get one app and the scopes it asks for
+      parameters:
+        - $ref: '#/components/parameters/AppSlug'
+      responses:
+        '200':
+          description: The app
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/App'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/integrations/{workspace_id}/installs:
+    get:
+      operationId: listInstalls
+      tags: [Installs]
+      summary: List installs in a workspace
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: state
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/InstallState'
+      responses:
+        '200':
+          description: Installs and the workspace's install limit
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, limit, counted]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Install'
+                  limit:
+                    type: integer
+                    nullable: true
+                    description: Install limit for the plan; null means unlimited.
+                    example: 20
+                  counted:
+                    type: integer
+                    description: Installs in the active or suspended state.
+                    example: 3
+    post:
+      operationId: startInstall
+      tags: [Installs]
+      summary: Start an install
+      description: >
+        Creates a `pending` install and returns the URL of the consent screen.
+        Owner or Admin only. The pending install expires after 30 minutes.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartInstallRequest'
+      responses:
+        '201':
+          description: Pending install created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartInstallResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The install limit is reached or the app is already installed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: install_limit_reached
+                message: This workspace already has 5 of 5 installs allowed on the Starter plan.
+        '422':
+          description: A requested scope is unknown or cannot be granted to integrations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: scope_not_grantable
+                message: The scope billing:read cannot be granted to an integration.
+  /v2/integrations/{workspace_id}/installs/{integration_id}:
+    get:
+      operationId: getInstall
+      tags: [Installs]
+      summary: Get install details
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/IntegrationId'
+      responses:
+        '200':
+          description: The install
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Install'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateInstall
+      tags: [Installs]
+      summary: Suspend or resume an install
+      description: Owner or Admin only. Only `active` and `suspended` are accepted.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/IntegrationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                state:
+                  type: string
+                  enum: [active, suspended]
+                  example: suspended
+                reason:
+                  type: string
+                  example: paused_by_admin
+      responses:
+        '200':
+          description: The updated install
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Install'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The state change is not allowed, for example from `revoked`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: invalid_transition
+                message: An install cannot move from revoked to active.
+    delete:
+      operationId: revokeInstall
+      tags: [Installs]
+      summary: Revoke an install
+      description: >
+        Owner or Admin only. Tokens are deleted within 60 seconds. Item links
+        are kept for 30 days.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/IntegrationId'
+      responses:
+        '200':
+          description: The revoked install
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Install'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v2/integrations/{workspace_id}/installs/{integration_id}/sync:
+    get:
+      operationId: getSyncStatus
+      tags: [Sync]
+      summary: Get sync status
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/IntegrationId'
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+    post:
+      operationId: requestSync
+      tags: [Sync]
+      summary: Request a manual resync
+      description: Owner or Admin only. Allowed once every 15 minutes per install.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/IntegrationId'
+      responses:
+        '202':
+          description: Sync queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+        '429':
+          description: A manual sync was requested less than 15 minutes ago
+          headers:
+            Retry-After:
+              description: Seconds until a manual sync is allowed again.
+              schema:
+                type: integer
+                example: 540
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: manual_sync_cooldown
+                message: A manual sync can be requested once every 15 minutes.
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key with the prefix `acme_live_` or `acme_test_`.
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ws_[A-Z0-9]{6}$'
+        example: ws_4H8P2L
+    IntegrationId:
+      name: integration_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^int_[A-Z0-9]{6}$'
+        example: int_4K9T2M
+    AppSlug:
+      name: app_slug
+      in: path
+      required: true
+      schema:
+        type: string
+        example: slack
+  responses:
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: No install with that ID exists in this workspace.
+    Forbidden:
+      description: The caller's role may not do this
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: owner_approval_required
+            message: Only the Owner can approve the restricted scope members:write.
+  schemas:
+    Plan:
+      type: string
+      enum: [free, starter, pro, business, enterprise]
+      example: pro
+    AppKind:
+      type: string
+      enum: [first_party, partner, private]
+      example: first_party
+    InstallState:
+      type: string
+      enum: [pending, active, suspended, revoked]
+      example: active
+    Scope:
+      type: string
+      enum:
+        - projects:read
+        - projects:write
+        - files:read
+        - files:write
+        - members:read
+        - members:write
+      example: projects:read
+    App:
+      type: object
+      required: [slug, name, kind, scopes, min_plan]
+      properties:
+        slug:
+          type: string
+          example: slack
+        name:
+          type: string
+          example: Slack
+        kind:
+          $ref: '#/components/schemas/AppKind'
+        description:
+          type: string
+          example: Posts project updates to channels and creates tasks from messages.
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scope'
+          example: [projects:read, projects:write, members:read]
+        min_plan:
+          $ref: '#/components/schemas/Plan'
+        sync_direction:
+          type: string
+          enum: [outbound, inbound, two_way]
+          example: outbound
+    Install:
+      type: object
+      required: [id, workspace_id, app_slug, state, scopes, created_at]
+      properties:
+        id:
+          type: string
+          example: int_4K9T2M
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        app_slug:
+          type: string
+          example: slack
+        state:
+          $ref: '#/components/schemas/InstallState'
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scope'
+          example: [projects:read, projects:write, members:read]
+        installed_by_role:
+          type: string
+          enum: [owner, admin]
+          example: admin
+        suspended_reason:
+          type: string
+          nullable: true
+          enum: [sync_failures, account_read_only, paused_by_admin, listing_removed, null]
+          example: null
+        consecutive_failures:
+          type: integer
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-11-02T09:15:00Z'
+        state_changed_at:
+          type: string
+          format: date-time
+          example: '2026-11-02T09:17:42Z'
+    StartInstallRequest:
+      type: object
+      required: [app_slug]
+      properties:
+        app_slug:
+          type: string
+          example: github
+        scopes:
+          type: array
+          description: Defaults to the scopes in the app's listing.
+          items:
+            $ref: '#/components/schemas/Scope'
+          example: [projects:read, projects:write]
+    StartInstallResponse:
+      type: object
+      required: [install, authorize_url, expires_at]
+      properties:
+        install:
+          $ref: '#/components/schemas/Install'
+        authorize_url:
+          type: string
+          format: uri
+          example: https://auth.acme-cloud.example/oauth/authorize?install=int_4K9T2M
+        expires_at:
+          type: string
+          format: date-time
+          description: 30 minutes after the install was started.
+          example: '2026-11-02T09:45:00Z'
+    SyncStatus:
+      type: object
+      required: [integration_id, mode, state]
+      properties:
+        integration_id:
+          type: string
+          example: int_4K9T2M
+        mode:
+          type: string
+          enum: [incremental, full]
+          example: incremental
+        state:
+          type: string
+          enum: [idle, queued, running, failed]
+          example: idle
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-11-26T10:05:00Z'
+        next_run_at:
+          type: string
+          format: date-time
+          example: '2026-11-26T10:10:00Z'
+        cursor_expires_at:
+          type: string
+          format: date-time
+          description: 7 days after the cursor was issued.
+          example: '2026-12-03T10:05:00Z'
+        consecutive_failures:
+          type: integer
+          example: 0
+        source_of_truth:
+          type: string
+          enum: [acme, remote]
+          example: acme
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: No install with that ID exists in this workspace.

@@ -1,0 +1,535 @@
+openapi: 3.0.3
+info:
+  title: Acme Cloud Accounts API
+  version: 2.0.0
+  description: >
+    Internal API of the Accounts service. It is the source of truth for
+    accounts, plans, workspaces and members. All data in this file is
+    fictional example data.
+  contact:
+    name: Accounts Platform
+    email: support@acme-cloud.example
+servers:
+  - url: https://api.acme-cloud.example
+    description: Production
+tags:
+  - name: Accounts
+  - name: Members
+  - name: Workspaces
+  - name: Exports
+security:
+  - bearerAuth: []
+paths:
+  /v2/accounts/{account_id}:
+    get:
+      tags: [Accounts]
+      operationId: getAccount
+      summary: Get account details and the current plan
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/accounts/{account_id}/close:
+    post:
+      tags: [Accounts]
+      operationId: closeAccount
+      summary: Close an account (Owner only)
+      description: >
+        Cancels any active subscription, signs out all members and moves the
+        account to `closed`. Data is kept for 30 days.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm_account_name]
+              properties:
+                confirm_account_name:
+                  type: string
+                  description: Must equal the account name.
+                  example: Example Design Studio
+      responses:
+        '200':
+          description: The closed account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+              example:
+                id: acc_7F3K9Q2M
+                name: Example Design Studio
+                state: closed
+                plan: pro
+                billing_cycle: annual
+                seats: 12
+                owner_user_id: usr_2B7N5C1D
+                created_at: '2025-03-04T09:15:00Z'
+                closed_at: '2026-11-20T14:02:00Z'
+                deletion_scheduled_at: '2026-12-20T14:02:00Z'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v2/accounts/{account_id}/restore:
+    post:
+      tags: [Accounts]
+      operationId: restoreAccount
+      summary: Restore a closed account within 30 days
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The restored account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '409':
+          description: The account is not `closed`, or the 30-day retention window has ended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: retention_window_ended
+                message: The account was deleted and cannot be restored.
+  /v2/accounts/{account_id}/members:
+    get:
+      tags: [Members]
+      operationId: listMembers
+      summary: List members and guests
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/Role'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    example: null
+    post:
+      tags: [Members]
+      operationId: inviteMembers
+      summary: Invite one or more members (Owner and Admin)
+      description: Up to 50 email addresses per batch. Invitations expire after 7 days.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+      responses:
+        '201':
+          description: Invitations created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: The batch is too large or the plan's member limit would be exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: member_limit_exceeded
+                message: The Starter plan allows at most 10 members.
+  /v2/accounts/{account_id}/members/{user_id}:
+    delete:
+      tags: [Members]
+      operationId: removeMember
+      summary: Remove a member (Owner and Admin)
+      description: >
+        Access ends immediately. Content is reassigned to the caller and the
+        freed seat is credited on the next invoice, prorated by day.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^usr_[A-Z0-9]{8}$'
+          example: usr_6H1R8T3V
+      responses:
+        '204':
+          description: Member removed
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v2/accounts/{account_id}/workspaces:
+    get:
+      tags: [Workspaces]
+      operationId: listWorkspaces
+      summary: List the account's workspaces
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: All workspaces of the account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workspace'
+    post:
+      tags: [Workspaces]
+      operationId: createWorkspace
+      summary: Create a workspace (Owner and Admin)
+      description: The region cannot be changed after creation.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 64
+                  example: Marketing
+                region:
+                  $ref: '#/components/schemas/Region'
+      responses:
+        '201':
+          description: Workspace created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: Workspace limit reached, or the region is not available on the plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: region_not_available
+                message: Region ap-south is available on Enterprise only.
+  /v2/accounts/{account_id}/workspaces/{workspace_id}/exports:
+    post:
+      tags: [Exports]
+      operationId: startExport
+      summary: Start a workspace export (Owner and Admin)
+      description: One export per workspace can run at a time. The download link is valid for 7 days.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '202':
+          description: Export started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v2/accounts/{account_id}/workspaces/{workspace_id}/exports/{export_id}:
+    get:
+      tags: [Exports]
+      operationId: getExport
+      summary: Get the status of an export
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: export_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^exp_[A-Z0-9]{8}$'
+          example: exp_9T4W2K7B
+      responses:
+        '200':
+          description: The export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Internal service token or an API key starting with `acme_live_` or `acme_test_`.
+  parameters:
+    AccountId:
+      name: account_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^acc_[A-Z0-9]{8}$'
+      example: acc_7F3K9Q2M
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ws_[A-Z0-9]{6}$'
+      example: ws_4H8P2L
+  responses:
+    Forbidden:
+      description: The caller's role does not allow this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: forbidden
+            message: Only the Owner can close the account.
+    NotFound:
+      description: The resource does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: Account acc_7F3K9Q2M was not found.
+    Conflict:
+      description: The request conflicts with the current state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: export_already_running
+            message: An export is already running for workspace ws_4H8P2L.
+  schemas:
+    AccountState:
+      type: string
+      enum: [trialing, active, past_due, read_only, closed, deleted]
+      example: active
+    Plan:
+      type: string
+      enum: [free, starter, pro, business, enterprise]
+      example: pro
+    Role:
+      type: string
+      enum: [owner, admin, billing_admin, member, guest]
+      example: member
+    Region:
+      type: string
+      enum: [us-east, eu-central, ap-south]
+      default: us-east
+      example: us-east
+    Account:
+      type: object
+      required: [id, name, state, plan, seats, owner_user_id, created_at]
+      properties:
+        id:
+          type: string
+          example: acc_7F3K9Q2M
+        name:
+          type: string
+          example: Example Design Studio
+        state:
+          $ref: '#/components/schemas/AccountState'
+        plan:
+          $ref: '#/components/schemas/Plan'
+        billing_cycle:
+          type: string
+          enum: [monthly, annual]
+          nullable: true
+          example: annual
+        seats:
+          type: integer
+          example: 12
+        owner_user_id:
+          type: string
+          example: usr_2B7N5C1D
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-03-04T09:15:00Z'
+        trial_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        deletion_scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 30 days after `closed_at`.
+          example: null
+    Member:
+      type: object
+      required: [user_id, email, role, status]
+      properties:
+        user_id:
+          type: string
+          example: usr_6H1R8T3V
+        email:
+          type: string
+          format: email
+          example: member@customer.example
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          type: string
+          enum: [invited, active]
+          example: invited
+        uses_seat:
+          type: boolean
+          description: False for guests.
+          example: true
+        workspace_ids:
+          type: array
+          items:
+            type: string
+          example: [ws_4H8P2L]
+        invited_at:
+          type: string
+          format: date-time
+          example: '2026-11-18T10:00:00Z'
+        invitation_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 7 days after `invited_at`.
+          example: '2026-11-25T10:00:00Z'
+    InviteRequest:
+      type: object
+      required: [emails, role, workspace_id]
+      properties:
+        emails:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            format: email
+          example: [first.invitee@customer.example, second.invitee@customer.example]
+        role:
+          type: string
+          enum: [admin, billing_admin, member, guest]
+          example: member
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+    Workspace:
+      type: object
+      required: [id, name, region, status, created_at]
+      properties:
+        id:
+          type: string
+          example: ws_4H8P2L
+        name:
+          type: string
+          example: Marketing
+        region:
+          $ref: '#/components/schemas/Region'
+        status:
+          type: string
+          enum: [active, archived, deleted]
+          example: active
+        member_count:
+          type: integer
+          example: 9
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-03-04T09:20:00Z'
+    Export:
+      type: object
+      required: [id, workspace_id, status, requested_at]
+      properties:
+        id:
+          type: string
+          example: exp_9T4W2K7B
+        workspace_id:
+          type: string
+          example: ws_4H8P2L
+        status:
+          type: string
+          enum: [queued, running, ready, failed, expired]
+          example: ready
+        requested_at:
+          type: string
+          format: date-time
+          example: '2026-11-20T08:00:00Z'
+        download_url:
+          type: string
+          format: uri
+          nullable: true
+          example: https://app.acme-cloud.example/exports/exp_9T4W2K7B/download
+        download_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 7 days after the export became ready.
+          example: '2026-11-27T09:30:00Z'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: forbidden
+        message:
+          type: string
+          example: Only the Owner can close the account.

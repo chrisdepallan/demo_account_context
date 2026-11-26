@@ -1,0 +1,128 @@
+# Default configuration for the Auth service (Identity, #team-identity).
+# Values here must match the docs in services/auth/docs/.
+# No secrets in this file: secrets are read from the named environment variables.
+
+service:
+  name: auth
+  api_base_url: https://api.acme-cloud.example/v2/auth
+  login_url: https://app.acme-cloud.example/login
+  port: 8080
+  log_level: info
+  request_timeout_seconds: 5
+  shutdown_grace_seconds: 30
+
+database:
+  url_env: AUTH_DATABASE_URL            # connection string, from the environment
+  pool_size: 30
+  statement_timeout_ms: 3000
+
+signing:
+  session_signing_key_env: AUTH_SESSION_SIGNING_KEY
+  saml_private_key_env: AUTH_SAML_PRIVATE_KEY
+  key_rotation_days: 90
+
+passwords:
+  min_length: 12
+  max_length: 128
+  history_size: 5                       # last 5 passwords cannot be reused
+  reject_breached: true
+  reject_containing_email: true
+  forced_expiry_days_allowed: [30, 60, 90]   # off unless an Admin sets one
+  reset_link_minutes: 60
+  reset_link_single_use: true
+
+lockout:
+  short:
+    max_failures: 5
+    window_minutes: 15
+    lock_minutes: 15
+  long:
+    max_failures: 10
+    window_minutes: 60
+    lock_minutes: 60
+    notify_user_by_email: true
+  unlock_on_password_reset: true
+
+mfa:
+  methods: [totp, security_key, passkey, sms]
+  sms_blocked_for_admin_roles_on_plans: [business, enterprise]
+  backup_codes: 10
+  require_mfa_min_plan: pro
+  require_mfa_grace_days: 7
+  support_reset_business_days: 2
+
+sessions:
+  web_inactivity_days: 14
+  mobile_inactivity_days: 90
+  admin_web_limit_min_hours: 1          # Business and Enterprise only
+  admin_web_limit_max_days: 14
+  max_concurrent_per_user: 10
+  revocation_propagation_seconds: 60
+  new_device_lookback_days: 90
+
+sso:
+  plans: [business, enterprise]
+  protocols: [saml2, oidc]
+  acs_url_template: https://auth.acme-cloud.example/saml/acs/{workspace_id}
+  entity_id_template: https://auth.acme-cloud.example/saml/{workspace_id}
+  name_id_format: emailAddress
+  owner_break_glass_login: true
+
+scim:
+  plans: [enterprise]
+  base_url_template: https://api.acme-cloud.example/v2/auth/scim/{workspace_id}
+  token_lifetime_days: 365
+  token_expiry_warning_days: 14
+  max_active_tokens_per_workspace: 2
+  deactivation_sla_minutes: 5
+
+api_keys:
+  live_prefix: acme_live_
+  test_prefix: acme_test_
+  min_plan: starter                     # Free accounts cannot use the API
+  max_active_per_workspace: 25
+  allowed_expiry_days: [30, 90, 180, 365]
+  allow_never_expire: true              # overridden by Require key expiry
+  expiry_warning_days: 14
+  rotation_overlap_hours: 24
+  revocation_propagation_seconds: 60
+  public_repo_scanning: true
+  scopes:
+    - projects:read
+    - projects:write
+    - files:read
+    - files:write
+    - members:read
+    - members:write
+    - billing:read                      # Owner and Billing admin only
+
+feature_flags:
+  passkeys: true
+  new_sign_in_email: true
+  scim_seat_cap: true
+  sms_mfa_voice_fallback: false         # not launched
+
+regions:
+  us-east:
+    default: true
+    auth_host: auth.acme-cloud.example
+    database_url_env: AUTH_DATABASE_URL_US_EAST
+    session_store_url_env: AUTH_SESSION_STORE_URL_US_EAST
+    replicas: 8
+  eu-central:
+    default: false
+    auth_host: auth.acme-cloud.example
+    database_url_env: AUTH_DATABASE_URL_EU_CENTRAL
+    session_store_url_env: AUTH_SESSION_STORE_URL_EU_CENTRAL
+    replicas: 4
+  ap-south:
+    default: false
+    auth_host: auth.acme-cloud.example
+    database_url_env: AUTH_DATABASE_URL_AP_SOUTH
+    session_store_url_env: AUTH_SESSION_STORE_URL_AP_SOUTH
+    replicas: 2
+
+notifications:
+  from_address: support@acme-cloud.example
+  email_api_key_env: AUTH_EMAIL_API_KEY
+  sms_provider_token_env: AUTH_SMS_PROVIDER_TOKEN

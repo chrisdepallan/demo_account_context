@@ -1,0 +1,138 @@
+# Default configuration for the Projects service (fictional).
+# Values here must match the docs in services/projects/docs/.
+# Secrets are never stored in this file: they are read from the environment
+# variables named under `secrets_from_env`.
+
+service:
+  name: projects
+  api_base_path: /v2/projects
+  port: 8082
+  default_region: us-east
+  owner_team: Work Management
+
+http:
+  request_timeout_seconds: 30
+  idle_timeout_seconds: 75
+  max_request_body_kb: 1024        # task descriptions are at most 50,000 characters
+  default_page_size: 50
+  max_page_size: 200
+
+# Limits that are the same on every plan.
+limits:
+  project_name_max_chars: 120
+  tasks_per_project: 10000
+  subtasks_per_task: 50
+  subtask_depth: 1
+  assignees_per_task: 10
+  labels_per_task: 20
+  task_title_max_chars: 255
+  task_description_max_chars: 50000
+  comment_max_chars: 10000
+  comment_edit_window_minutes: 15
+  board_columns_max: 20
+  wip_limit_min: 1
+  wip_limit_max: 999
+  select_field_options_max: 100
+  explicit_grants_per_project: 500
+  export_max_rows: 10000
+  trash_retention_days: 30
+
+# Per-plan limits. null means unlimited, 0 means the feature is not available.
+plans:
+  free:
+    active_projects_per_workspace: 5
+    saved_views_per_project: 3
+    custom_fields_per_project: 0
+    custom_templates_per_workspace: 0
+    automation_rules_per_project: 0
+    automation_runs_per_month: 0
+    views: [board, list]
+  starter:
+    active_projects_per_workspace: 50
+    saved_views_per_project: 10
+    custom_fields_per_project: 5
+    custom_templates_per_workspace: 5
+    automation_rules_per_project: 5
+    automation_runs_per_month: 1000
+    views: [board, list, calendar]
+  pro:
+    active_projects_per_workspace: 500
+    saved_views_per_project: 50
+    custom_fields_per_project: 20
+    custom_templates_per_workspace: 50
+    automation_rules_per_project: 25
+    automation_runs_per_month: 10000
+    views: [board, list, calendar, timeline]
+  business:
+    active_projects_per_workspace: null
+    saved_views_per_project: 50
+    custom_fields_per_project: 50
+    custom_templates_per_workspace: null
+    automation_rules_per_project: 100
+    automation_runs_per_month: 50000
+    views: [board, list, calendar, timeline, workload]
+  enterprise:
+    active_projects_per_workspace: null
+    saved_views_per_project: 50
+    custom_fields_per_project: 100
+    custom_templates_per_workspace: null
+    automation_rules_per_project: 250
+    automation_runs_per_month: 250000
+    views: [board, list, calendar, timeline, workload]
+
+workflow:
+  default_status: backlog
+  default_priority: medium
+  statuses: [backlog, todo, in_progress, in_review, done, cancelled]
+  block_done_with_open_subtasks: true
+
+automation:
+  max_conditions_per_rule: 5
+  max_actions_per_rule: 5
+  max_chain_depth: 5                 # a chain of rules stops after 5 steps
+  disable_after_consecutive_failures: 10
+  usage_warning_percent: [80, 100]   # emails to Owner and Admins
+  run_history_retention_days: 30
+  action_timeout_seconds: 10
+
+templates:
+  built_in_count: 12
+  max_starter_tasks: 200
+
+feature_flags:
+  enforce_column_limits: false       # per-project opt-in; default is warn only
+  timeline_view: true
+  workload_view: true
+  automation_engine: true
+  csv_export: true
+
+# Each workspace lives in exactly one region, fixed at creation.
+regions:
+  us-east:
+    enabled: true
+    plans: [free, starter, pro, business, enterprise]
+    database_host: projects-db.us-east.internal.acme-cloud.example
+    automation_workers: 12
+  eu-central:
+    enabled: true
+    plans: [business, enterprise]
+    database_host: projects-db.eu-central.internal.acme-cloud.example
+    automation_workers: 6
+  ap-south:
+    enabled: true
+    plans: [enterprise]
+    database_host: projects-db.ap-south.internal.acme-cloud.example
+    automation_workers: 3
+
+dependencies:
+  accounts_base_url: https://api.acme-cloud.example/v2/accounts
+  timeout_seconds: 5
+  retries: 2
+
+secrets_from_env:
+  database_password: PROJECTS_DB_PASSWORD
+  service_token: PROJECTS_SERVICE_TOKEN
+
+logging:
+  level: info
+  format: json
