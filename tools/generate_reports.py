@@ -1024,13 +1024,14 @@ def build_fixtures() -> dict[str, tuple[str, list[dict]]]:
     fx["notifications"] = ("sample-notifications.json", [
         {"notification_id": make_id(r, "ntf_", 10), "account_id": r.choice(accounts),
          "channel": r.choice(["email", "in_app", "push"]),
-         "event_type": r.choice(["task.assigned", "task.completed", "file.shared", "member.invited", "invoice.paid"]),
+         "type": r.choice(["mention", "task_assigned", "task_due_soon", "task_completed", "comment_added",
+                           "file_shared", "storage_warning", "billing_alert"]),
          "status": r.choice(["sent", "sent", "delivered", "bounced", "suppressed"]), "created_at": stamp()}
         for _ in range(10)])
     fx["webhooks"] = ("sample-deliveries.json", [
-        {"event_id": make_id(r, "evt_", 10), "endpoint_id": r.choice(endpoints),
+        {"delivery_id": make_id(r, "dlv_", 10), "event_id": make_id(r, "evt_", 10), "endpoint_id": r.choice(endpoints),
          "event_type": r.choice(["project.created", "task.completed", "file.uploaded", "member.invited", "invoice.paid"]),
-         "attempt": r.randrange(1, 5), "status_code": r.choice([200, 200, 200, 204, 500, 503, 410]),
+         "attempt": r.randrange(1, 9), "status_code": r.choice([200, 200, 200, 204, 500, 503, 410]),
          "duration_ms": r.randrange(40, 4000), "delivered_at": stamp()} for _ in range(10)])
     fx["search"] = ("sample-queries.json", [
         {"query": q, "workspace_id": r.choice(workspaces), "result_count": r.randrange(0, 240),

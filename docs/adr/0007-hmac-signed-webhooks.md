@@ -16,12 +16,12 @@ Every webhook request sent by the webhooks service is signed with HMAC-SHA256 us
 
 - Each webhook endpoint (`whk_` plus **8** uppercase alphanumerics) has its own signing secret. The secret is shown to the customer once, when the endpoint is created or the secret is rotated.
 - The signature is computed over the timestamp, a full stop and the raw request body, using HMAC-SHA256.
-- The request carries the header `Acme-Signature` with the signature and the header `Acme-Timestamp` with the Unix time in seconds.
+- The request carries one header, `Acme-Signature`, in the form `t=<unix time in seconds>,v1=<hex signature>`. The details are in `services/webhooks/docs/signing-and-verification.md`.
 - Customers should reject a request whose timestamp is more than **5 minutes** old.
 - The body contains the event's `evt_` ID. Because delivery is at least once, customers should ignore an event ID they have already processed.
 - Webhook endpoints must use HTTPS.
 - After a secret rotation, the old secret stays valid for **24 hours**, the same overlap used for API key rotation in `services/auth/docs/api-keys.md`.
-- Failed deliveries are retried with increasing delays for up to **24 hours**. Each retry is signed again with a fresh timestamp.
+- Failed deliveries are retried with increasing delays: **8 attempts** over about **45 hours**, as described in `services/webhooks/docs/retries-and-failures.md`. Each retry is signed again with a fresh timestamp.
 
 ## Consequences
 
