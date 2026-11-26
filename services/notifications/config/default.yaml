@@ -1,0 +1,108 @@
+# Default configuration for the Acme Cloud Notifications service.
+# Values here must match docs/*.md. Secrets are never stored in this file:
+# entries ending in _env name the environment variable that holds the secret.
+
+service:
+  name: notifications
+  api_base_path: /v2/notifications
+  port: 8080
+  log_level: info
+  request_timeout_seconds: 10
+
+channels:
+  enabled: [email, in_app, push]
+  # Types whose email and in-app delivery cannot be turned off.
+  mandatory_types: [security_alert, billing_alert, account_notice]
+
+in_app:
+  retention_days: 90            # read and unread notifications are deleted after this
+  inbox_page_size_default: 25
+  inbox_page_size_max: 100
+
+push:
+  max_devices_per_user: 10
+  inactive_device_days: 60      # device tokens unused for this long are removed
+  provider_timeout_seconds: 5
+  apns_key_env: ACME_NOTIFICATIONS_APNS_KEY
+  fcm_key_env: ACME_NOTIFICATIONS_FCM_KEY
+  web_push_private_key_env: ACME_NOTIFICATIONS_WEB_PUSH_KEY
+
+email:
+  from_address: notifications@acme-cloud.example
+  support_address: support@acme-cloud.example
+  target_handoff_seconds: 60    # normal time from event to hand-off to the mail provider
+  provider_timeout_seconds: 10
+  provider_api_key_env: ACME_NOTIFICATIONS_EMAIL_PROVIDER_KEY
+  dkim_private_key_env: ACME_NOTIFICATIONS_DKIM_KEY
+  dkim_key_bits: 2048
+  dmarc_policy: reject
+  delivery_log_retention_days: 30
+  soft_bounce:
+    retry_delays_seconds: [300, 1800, 7200]   # 5 minutes, 30 minutes, 2 hours
+    consecutive_messages_before_suppression: 5
+    suppression_days: 7
+  hard_bounce:
+    suppress_immediately: true                # lifted only by verifying the address again
+  complaint:
+    suppress_non_mandatory: true
+  reverification_clear_minutes: 5
+  custom_sender_domain_plans: [enterprise]
+
+digest:
+  default_frequency: daily      # off | daily | weekly
+  send_time_local: "08:00"
+  weekly_send_day: monday
+  daily_window_hours: 24
+  weekly_window_days: 7
+  max_items: 50
+  default_time_zone: UTC        # used when the profile has no time zone
+  skip_when_empty: true
+
+quiet_hours:
+  enabled_by_default: false
+  default_start: "22:00"
+  default_end: "07:00"
+  step_minutes: 15
+  held_channels: [email, push]  # in-app is always delivered
+  summary_threshold: 10         # more than this many held per channel -> one summary
+
+rate_limits:
+  window_minutes: 60            # rolling window
+  per_user_per_hour:
+    email: 20
+    push: 30
+  exempt: [mandatory_types, digest]
+  send_api:
+    requests_per_minute: 600    # per calling service and account
+    max_recipients_per_request: 100
+
+reminders:
+  task_due_soon_hours_before: 24
+  storage_warning_thresholds_percent: [90, 100]
+
+feature_flags:
+  push_enabled: true
+  web_push_enabled: true
+  weekly_digest_enabled: true
+  one_click_unsubscribe: true
+  custom_sender_domain: true    # still limited to the plans listed under email
+
+regions:
+  us-east:
+    default: true
+    queue_url_env: ACME_NOTIFICATIONS_QUEUE_URL_US_EAST
+    database_url_env: ACME_NOTIFICATIONS_DB_URL_US_EAST
+    email_workers: 12
+    push_workers: 8
+  eu-central:
+    default: false
+    queue_url_env: ACME_NOTIFICATIONS_QUEUE_URL_EU_CENTRAL
+    database_url_env: ACME_NOTIFICATIONS_DB_URL_EU_CENTRAL
+    email_workers: 6
+    push_workers: 4
+  ap-south:
+    default: false
+    queue_url_env: ACME_NOTIFICATIONS_QUEUE_URL_AP_SOUTH
+    database_url_env: ACME_NOTIFICATIONS_DB_URL_AP_SOUTH
+    email_workers: 4
+    push_workers: 2
