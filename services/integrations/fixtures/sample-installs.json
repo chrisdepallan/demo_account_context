@@ -1,0 +1,58 @@
+[
+  {
+    "integration_id": "int_VRJKMD",
+    "account_id": "acc_KUGPVP7S",
+    "app": "google-workspace",
+    "state": "active",
+    "installed_at": "2025-08-27"
+  },
+  {
+    "integration_id": "int_6XAE3X",
+    "account_id": "acc_BVJTUMLH",
+    "app": "google-workspace",
+    "state": "active",
+    "installed_at": "2025-08-29"
+  },
+  {
+    "integration_id": "int_2LHB7R",
+    "account_id": "acc_EZSV5HNE",
+    "app": "github",
+    "state": "revoked",
+    "installed_at": "2026-07-08"
+  },
+  {
+    "integration_id": "int_NSAPUA",
+    "account_id": "acc_EZSV5HNE",
+    "app": "slack",
+    "state": "suspended",
+    "installed_at": "2026-02-19"
+  },
+  {
+    "integration_id": "int_JMW64Y",
+    "account_id": "acc_SUPKUCRZ",
+    "app": "jira",
+    "state": "revoked",
+    "installed_at": "2026-01-10"
+  },
+  {
+    "integration_id": "int_UW368X",
+    "account_id": "acc_QDBVLD3E",
+    "app": "github",
+    "state": "revoked",
+    "installed_at": "2026-10-27"
+  },
+  {
+    "integration_id": "int_KYFQZA",
+    "account_id": "acc_EZSV5HNE",
+    "app": "google-workspace",
+    "state": "suspended",
+    "installed_at": "2025-10-03"
+  },
+  {
+    "integration_id": "int_9Z5ATJ",
+    "account_id": "acc_KUGPVP7S",
+    "app": "google-workspace",
+    "state": "revoked",
+    "installed_at": "2026-05-08"
+  }
+]

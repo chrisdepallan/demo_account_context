@@ -58,7 +58,7 @@ No. Entries record that a password or key was changed, never the value. Metadata
 
 ## How quickly do actions appear in the audit log?
 
-Within **60 seconds** of the action. Entries are written in the order they happened and each gets the next sequence number for the account.
+Normally within **10 seconds**: the target is **99%** of entries written within 10 seconds of the action. Entries are written in the order they happened and each gets the next sequence number in the account's chain for its region.
 
 ## Are failed attempts recorded?
 

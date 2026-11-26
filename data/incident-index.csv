@@ -1,0 +1,25 @@
+incident_id,started_at_utc,severity,service,duration_minutes,regions,accounts_affected,tickets,title,postmortem
+INC-2025-001,2025-10-04T08:27:00Z,SEV2,support,50,us-east ap-south,1928,20,First-response timers ignored business hours,reports/incidents/INC-2025-001-support-response-timers-wrong.md
+INC-2025-002,2025-10-12T16:01:00Z,SEV2,billing,79,us-east ap-south,352,12,Failed-payment reminder emails were not sent,reports/incidents/INC-2025-002-billing-dunning-emails-not-sent.md
+INC-2025-003,2025-10-24T05:01:00Z,SEV4,files,37,eu-central ap-south,275,8,Valid sharing links returned 403,reports/incidents/INC-2025-003-files-sharing-links-denied.md
+INC-2025-004,2025-11-20T22:07:00Z,SEV2,analytics,38,us-east ap-south,2536,0,Scheduled exports were not sent,reports/incidents/INC-2025-004-analytics-scheduled-exports-missed.md
+INC-2025-005,2025-12-25T07:38:00Z,SEV3,webhooks,86,eu-central,574,16,Healthy webhook endpoints disabled in error,reports/incidents/INC-2025-005-webhooks-endpoints-disabled-in-error.md
+INC-2026-001,2026-02-01T18:54:00Z,SEV3,support,78,eu-central,724,0,P1 tickets routed to the general queue,reports/incidents/INC-2026-001-support-p1-tickets-misrouted.md
+INC-2026-002,2026-02-17T15:39:00Z,SEV3,analytics,42,us-east ap-south,364,10,Task completion rate miscalculated for archived projects,reports/incidents/INC-2026-002-analytics-completion-rate-wrong.md
+INC-2026-003,2026-02-18T20:38:00Z,SEV3,accounts,89,us-east ap-south,566,14,Ownership transfers failed with a server error,reports/incidents/INC-2026-003-accounts-ownership-transfer-errors.md
+INC-2026-004,2026-03-06T13:44:00Z,SEV3,search,71,eu-central,700,16,Search results lagged behind recent changes,reports/incidents/INC-2026-004-search-index-lag.md
+INC-2026-005,2026-04-22T10:10:00Z,SEV2,support,67,us-east,2288,0,Live chat unavailable during business hours,reports/incidents/INC-2026-005-support-live-chat-unavailable.md
+INC-2026-006,2026-05-06T17:22:00Z,SEV2,accounts,48,eu-central,968,12,Stale plan limits blocked upgrades from taking effect,reports/incidents/INC-2026-006-accounts-stale-plan-limits.md
+INC-2026-007,2026-05-13T15:41:00Z,SEV3,billing,62,eu-central,504,14,Renewal invoices issued twice for a subset of accounts,reports/incidents/INC-2026-007-billing-duplicate-renewal-invoices.md
+INC-2026-008,2026-05-26T03:19:00Z,SEV2,accounts,74,eu-central,1896,40,Trial expiry job stalled and accounts stayed in trialing,reports/incidents/INC-2026-008-accounts-trial-expiry-job-stalled.md
+INC-2026-009,2026-05-27T14:06:00Z,SEV3,support,69,eu-central,46,20,Live chat unavailable during business hours,reports/incidents/INC-2026-009-support-live-chat-unavailable.md
+INC-2026-010,2026-05-30T12:36:00Z,SEV4,accounts,45,us-east eu-central,26,5,Trial expiry job stalled and accounts stayed in trialing,reports/incidents/INC-2026-010-accounts-trial-expiry-job-stalled.md
+INC-2026-011,2026-06-08T14:20:00Z,SEV2,integrations,92,ap-south,1648,28,New integration installs failed at the consent step,reports/incidents/INC-2026-011-integrations-oauth-installs-failed.md
+INC-2026-012,2026-06-20T15:06:00Z,SEV3,notifications,73,ap-south,462,8,Notification emails delayed,reports/incidents/INC-2026-012-notifications-email-delivery-delays.md
+INC-2026-013,2026-06-20T17:08:00Z,SEV3,support,36,eu-central ap-south,674,18,First-response timers ignored business hours,reports/incidents/INC-2026-013-support-response-timers-wrong.md
+INC-2026-014,2026-06-21T15:31:00Z,SEV4,webhooks,43,eu-central,89,11,Healthy webhook endpoints disabled in error,reports/incidents/INC-2026-014-webhooks-endpoints-disabled-in-error.md
+INC-2026-015,2026-06-22T06:33:00Z,SEV2,audit-log,63,eu-central,2680,36,Hash-chain verification raised a false alarm,reports/incidents/INC-2026-015-audit-log-chain-verification-false-alarm.md
+INC-2026-016,2026-07-18T17:20:00Z,SEV2,accounts,53,us-east ap-south,3192,28,Trial expiry job stalled and accounts stayed in trialing,reports/incidents/INC-2026-016-accounts-trial-expiry-job-stalled.md
+INC-2026-017,2026-08-07T08:36:00Z,SEV3,notifications,75,us-east,598,18,Daily digest sent twice,reports/incidents/INC-2026-017-notifications-digest-sent-twice.md
+INC-2026-018,2026-09-02T07:29:00Z,SEV3,auth,75,ap-south,138,16,SSO sign-ins rejected because of clock skew,reports/incidents/INC-2026-018-auth-sso-clock-skew.md
+INC-2026-019,2026-09-19T00:49:00Z,SEV4,audit-log,40,us-east,168,2,Gap in SIEM streaming,reports/incidents/INC-2026-019-audit-log-siem-stream-gap.md

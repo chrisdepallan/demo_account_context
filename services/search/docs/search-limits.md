@@ -23,7 +23,7 @@ Queries over these limits return `400 invalid_query`. The syntax is described in
 
 ## How many results does a search return?
 
-A page holds **25 results** by default and at most **100**. In the API, set the page size with `limit` and fetch the next page with the `cursor` value from the previous response.
+A page holds **50 results** by default and at most **200**. In the API, set the page size with `limit` and fetch the next page with the `cursor` value from the previous response.
 
 A single query can page through at most the first **10,000 results**. If a search matches more than that, add filters to narrow it. The `total` field in the response is exact up to **10,000** and reported as `10000` with `total_is_capped: true` above that.
 
@@ -42,7 +42,7 @@ Yes, on Starter and above. Free accounts cannot use the API. The API key needs `
 
 ## How long does a search take before it times out?
 
-A search is stopped after **5 seconds**. If some matches were found by then, they are returned with `partial: true` so the app can show them with a notice. If nothing was found in time, the response is `504 search_timeout`; narrowing the query with filters usually fixes it.
+A search is stopped after **5 seconds**. If some matches were found by then, they are returned with `partial: true` so the app can show them with a notice. If nothing was found in time, the response is `503 search_timeout`; narrowing the query with filters usually fixes it.
 
 Autocomplete suggestions have a shorter timeout of **500 milliseconds**, need at least **2 characters** and return up to **8 suggestions**.
 

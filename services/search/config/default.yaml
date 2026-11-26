@@ -15,12 +15,12 @@ query:
   max_terms: 32                  # words, phrases, wildcards and exclusions
   max_filters: 10
   min_prefix_length: 3           # characters required before a trailing *
-  timeout_ms: 5000               # then partial results or 504 search_timeout
+  timeout_ms: 5000               # then partial results or 503 search_timeout
   return_partial_on_timeout: true
 
 results:
-  default_page_size: 25
-  max_page_size: 100
+  default_page_size: 50
+  max_page_size: 200
   max_reachable_results: 10000   # deepest result a cursor can reach
   snippet_length_chars: 160
 
@@ -49,8 +49,8 @@ indexing:
   retry_backoff_initial_ms: 500
   retry_backoff_max_ms: 30000
   freshness_targets_seconds:     # p95 targets, alert when exceeded
-    project: 10
-    task: 10
+    project: 30
+    task: 30
     file_name: 30
     file_content: 300
     deletion: 60

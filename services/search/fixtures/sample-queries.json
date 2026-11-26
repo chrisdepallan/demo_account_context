@@ -1,0 +1,50 @@
+[
+  {
+    "query": "launch checklist",
+    "workspace_id": "ws_J3Z5HU",
+    "result_count": 99,
+    "took_ms": 142
+  },
+  {
+    "query": "type:task assignee:me",
+    "workspace_id": "ws_AWNFUD",
+    "result_count": 185,
+    "took_ms": 158
+  },
+  {
+    "query": "\"quarterly roadmap\"",
+    "workspace_id": "ws_ZK4YE7",
+    "result_count": 200,
+    "took_ms": 110
+  },
+  {
+    "query": "type:file budget",
+    "workspace_id": "ws_J3Z5HU",
+    "result_count": 194,
+    "took_ms": 193
+  },
+  {
+    "query": "onboarding -archived",
+    "workspace_id": "ws_ZK4YE7",
+    "result_count": 137,
+    "took_ms": 133
+  },
+  {
+    "query": "type:task status:open pricing",
+    "workspace_id": "ws_ZK4YE7",
+    "result_count": 65,
+    "took_ms": 74
+  },
+  {
+    "query": "kickoff notes",
+    "workspace_id": "ws_J3Z5HU",
+    "result_count": 64,
+    "took_ms": 199
+  },
+  {
+    "query": "logo type:file",
+    "workspace_id": "ws_MZ7ELU",
+    "result_count": 5,
+    "took_ms": 161
+  }
+]

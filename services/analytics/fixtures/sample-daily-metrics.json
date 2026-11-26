@@ -1,0 +1,74 @@
+[
+  {
+    "account_id": "acc_43HH8WNQ",
+    "date": "2026-11-25",
+    "active_members": 41,
+    "tasks_created": 161,
+    "tasks_completed": 30,
+    "storage_used_gb": 55.6
+  },
+  {
+    "account_id": "acc_L28CDH2C",
+    "date": "2026-11-24",
+    "active_members": 34,
+    "tasks_created": 144,
+    "tasks_completed": 169,
+    "storage_used_gb": 304.5
+  },
+  {
+    "account_id": "acc_74PZVY73",
+    "date": "2026-11-23",
+    "active_members": 37,
+    "tasks_created": 194,
+    "tasks_completed": 68,
+    "storage_used_gb": 364.1
+  },
+  {
+    "account_id": "acc_43HH8WNQ",
+    "date": "2026-11-22",
+    "active_members": 64,
+    "tasks_created": 118,
+    "tasks_completed": 20,
+    "storage_used_gb": 343.0
+  },
+  {
+    "account_id": "acc_L28CDH2C",
+    "date": "2026-11-21",
+    "active_members": 27,
+    "tasks_created": 188,
+    "tasks_completed": 60,
+    "storage_used_gb": 281.1
+  },
+  {
+    "account_id": "acc_74PZVY73",
+    "date": "2026-11-20",
+    "active_members": 17,
+    "tasks_created": 198,
+    "tasks_completed": 109,
+    "storage_used_gb": 235.9
+  },
+  {
+    "account_id": "acc_43HH8WNQ",
+    "date": "2026-11-19",
+    "active_members": 48,
+    "tasks_created": 144,
+    "tasks_completed": 149,
+    "storage_used_gb": 263.2
+  },
+  {
+    "account_id": "acc_L28CDH2C",
+    "date": "2026-11-18",
+    "active_members": 47,
+    "tasks_created": 175,
+    "tasks_completed": 178,
+    "storage_used_gb": 90.3
+  },
+  {
+    "account_id": "acc_74PZVY73",
+    "date": "2026-11-17",
+    "active_members": 23,
+    "tasks_created": 115,
+    "tasks_completed": 34,
+    "storage_used_gb": 3.0
+  }
+]

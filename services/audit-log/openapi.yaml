@@ -28,13 +28,13 @@ paths:
       description: Newest first. Needs an API key with the `members:read` scope.
       parameters:
         - $ref: '#/components/parameters/AccountId'
-        - name: from
+        - name: occurred_after
           in: query
           schema:
             type: string
             format: date-time
           example: '2026-11-01T00:00:00Z'
-        - name: to
+        - name: occurred_before
           in: query
           schema:
             type: string
@@ -68,8 +68,8 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 1000
-            default: 100
+            maximum: 200
+            default: 50
         - name: cursor
           in: query
           schema:
@@ -81,9 +81,9 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [entries]
+                required: [data, next_cursor]
                 properties:
-                  entries:
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/AuditEntry'
@@ -123,8 +123,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: not_found
-                message: Entry aud_7H2KQ9M4XP was not found.
+                error:
+                  code: not_found
+                  message: Entry aud_7H2KQ9M4XP was not found.
+                  request_id: req_4C8F1A6E9B2D
   /v2/audit-log/{account_id}/exports:
     post:
       operationId: createExport
@@ -133,6 +135,7 @@ paths:
       description: Up to 1,000,000 entries per export and 5 exports per account per day.
       parameters:
         - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -173,8 +176,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: export_too_large
-                message: The range holds more than 1,000,000 entries. Split it into smaller ranges.
+                error:
+                  code: export_too_large
+                  message: The range holds more than 1,000,000 entries. Split it into smaller ranges.
+                  request_id: req_4C8F1A6E9B2D
         '429':
           description: The account has already started 5 exports today.
           content:
@@ -182,8 +187,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: export_limit_reached
-                message: An account can start 5 exports per day.
+                error:
+                  code: export_limit_reached
+                  message: An account can start 5 exports per day.
+                  request_id: req_4C8F1A6E9B2D
   /v2/audit-log/{account_id}/exports/{export_id}:
     get:
       operationId: getExport
@@ -220,7 +227,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  streams:
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/Stream'
@@ -231,6 +238,7 @@ paths:
       description: Business (1 stream) and Enterprise (5 streams) only.
       parameters:
         - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -278,8 +286,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: stream_limit_reached
-                message: The Business plan allows 1 stream per account.
+                error:
+                  code: stream_limit_reached
+                  message: The Business plan allows 1 stream per account.
+                  request_id: req_4C8F1A6E9B2D
   /v2/audit-log/{account_id}/streams/{stream_id}:
     delete:
       operationId: deleteStream
@@ -304,14 +314,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: not_found
-                message: Stream strm_6C2X9R4B was not found.
+                error:
+                  code: not_found
+                  message: Stream strm_6C2X9R4B was not found.
+                  request_id: req_4C8F1A6E9B2D
   /v2/audit-log/{account_id}/verify:
     post:
       operationId: verifyChain
       tags: [Integrity]
       summary: Verify the hash chain for a range
-      description: Checks up to 100,000 entries per request.
+      description: >
+        Checks up to 100,000 entries of one chain per request. There is one
+        chain per account per region.
       parameters:
         - $ref: '#/components/parameters/AccountId'
       requestBody:
@@ -320,8 +334,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [from_sequence, to_sequence]
+              required: [region, from_sequence, to_sequence]
               properties:
+                region:
+                  type: string
+                  enum: [us-east, eu-central, ap-south]
                 from_sequence:
                   type: integer
                   minimum: 1
@@ -329,6 +346,7 @@ paths:
                   type: integer
                   minimum: 1
             example:
+              region: us-east
               from_sequence: 18001
               to_sequence: 18250
       responses:
@@ -345,8 +363,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: range_too_large
-                message: A verification can cover at most 100,000 entries.
+                error:
+                  code: range_too_large
+                  message: A verification can cover at most 100,000 entries.
+                  request_id: req_4C8F1A6E9B2D
   /v2/audit-log/{account_id}/retention:
     get:
       operationId: getRetention
@@ -376,6 +396,15 @@ components:
         type: string
         pattern: '^acc_[A-Z0-9]{8}$'
       example: acc_7F3K9Q2M
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Client-chosen unique string; a repeat within 24 hours returns the first response.
+      schema:
+        type: string
+        maxLength: 64
+      example: 0b6f4c1e-audit-export-01
   responses:
     Forbidden:
       description: The plan has no audit log, or the caller may not use this operation.
@@ -384,8 +413,10 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            error: audit_log_not_available
-            message: The audit log is available on Pro, Business and Enterprise.
+            error:
+              code: audit_log_not_available
+              message: The audit log is available on Pro, Business and Enterprise.
+              request_id: req_4C8F1A6E9B2D
     RateLimited:
       description: Account API rate limit exceeded.
       headers:
@@ -398,8 +429,10 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            error: rate_limited
-            message: Too many requests. Retry after 8 seconds.
+            error:
+              code: rate_limited
+              message: Too many requests. Retry after 8 seconds.
+              request_id: req_4C8F1A6E9B2D
   schemas:
     Category:
       type: string
@@ -423,6 +456,7 @@ components:
         sequence:
           type: integer
           minimum: 1
+          description: Position in the account's chain for this region.
         occurred_at:
           type: string
           format: date-time
@@ -619,11 +653,20 @@ components:
           example: '2026-11-27T02:00:00Z'
     Error:
       type: object
-      required: [error, message]
+      required: [error]
       properties:
         error:
-          type: string
-          example: not_found
-        message:
-          type: string
-          example: Entry aud_7H2KQ9M4XP was not found.
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              description: Stable snake_case code that clients can test.
+              example: not_found
+            message:
+              type: string
+              example: Entry aud_7H2KQ9M4XP was not found.
+            request_id:
+              type: string
+              description: Also returned in the X-Request-Id response header.
+              example: req_4C8F1A6E9B2D

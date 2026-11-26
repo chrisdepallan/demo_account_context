@@ -9,7 +9,7 @@ The Search service provides full-text search across the projects, tasks and file
 - **Query** – the text typed into the search box, up to **512 characters**: words, `"exact phrases"`, `-excluded` words and `key:value` filters.
 - **Filter** – a `key:value` condition such as `type:task` or `assignee:me` that narrows results without affecting relevance.
 - **Index** – the per-workspace search data, stored in the workspace's region (`us-east`, `eu-central` or `ap-south`).
-- **Freshness** – how quickly a change becomes searchable: **10 seconds** for projects and tasks, **30 seconds** for file names, **5 minutes** for file contents.
+- **Freshness** – how quickly a change becomes searchable: **30 seconds** for projects, tasks and file names, **5 minutes** for file contents.
 - **Relevance score** – term frequency, a **3×** title boost and a recency decay with a **30-day** half-life.
 - **Content search** – searching inside file contents, available on Pro, Business and Enterprise.
 - **Saved search** – a query stored by a member for reuse; IDs look like `srch_5T8W2N6C`.

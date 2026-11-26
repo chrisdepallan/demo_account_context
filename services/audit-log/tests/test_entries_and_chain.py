@@ -174,6 +174,8 @@ class HashChainTests(unittest.TestCase):
             chain.append(make_entry(1, event_type="comment.created"))
         with self.assertRaises(ValueError):
             chain.append(make_entry(1, account_id="acc_9Z8Y7X6W"))
+        with self.assertRaises(ValueError):
+            chain.append(make_entry(1, region="eu-central"))
         self.assertEqual(len(chain), 1)
 
 

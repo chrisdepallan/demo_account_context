@@ -14,7 +14,7 @@ Each workspace has its own index. Search never returns results from another work
 
 | Change | Searchable within |
 |--------|-------------------|
-| Project or task created or edited | **10 seconds** |
+| Project or task created or edited | **30 seconds** |
 | File uploaded or renamed (file name) | **30 seconds** |
 | File contents (text extraction) | **5 minutes** |
 | Item deleted, moved to trash or access removed | **60 seconds** |

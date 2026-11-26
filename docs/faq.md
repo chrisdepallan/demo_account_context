@@ -83,4 +83,44 @@ Yes. The current Owner goes to **Settings → Account → Transfer ownership** a
 
 Yes, where required. US sales tax is charged based on the billing address. EU VAT is charged at the local rate unless a valid VAT ID is provided (reverse charge). Details: `services/billing/docs/invoices-and-taxes.md`.
 
-Last reviewed: 2026-11-19
+## How many projects can I have?
+
+Free workspaces can have **5** active projects, Starter **50** and Pro **500**. Business and Enterprise have no limit. Archived projects do not count. Details: `services/projects/docs/projects-and-tasks.md`.
+
+## How do I get a deleted file back?
+
+Open **Files → Trash** and restore the file. Deleted files stay in the trash for **30 days** on every plan and are then removed permanently. Details: `services/files/docs/versioning-and-trash.md`.
+
+## Can I share a file with someone outside my workspace?
+
+Yes. Create a sharing link with the audience set to anyone with the link. Free plans can create view-only public links; password protection needs Starter or above. Details: `services/files/docs/sharing-links.md`.
+
+## How do I stop notification emails at night?
+
+Turn on quiet hours under **Settings → Notifications**. The default window is **22:00–07:00**. Security, billing and account notices are still delivered. Details: `services/notifications/docs/quiet-hours-and-rate-limits.md`.
+
+## Do you support webhooks?
+
+Yes, on Starter and above. Owners and Admins add endpoints under **Settings → Webhooks**. Every delivery is signed, and failed deliveries are retried up to **8 times** over about **45 hours**. Details: `services/webhooks/README.md`.
+
+## Why can't I find something I just created in search?
+
+New and changed projects, tasks and file names normally appear in search within **30 seconds**. Text inside files can take up to **5 minutes** and is searchable on Pro and above only. Details: `services/search/docs/indexing-and-freshness.md`.
+
+## Is there an audit log?
+
+Yes, on Pro and above. Entries are kept for **90 days** on Pro, **1 year** on Business and **7 years** on Enterprise. Only Owners and Admins can view the audit log. Details: `services/audit-log/docs/retention-and-export.md`.
+
+## Which integrations are available?
+
+Slack, GitHub, Jira and Google Workspace are built by Acme Cloud and available on every plan. Free workspaces can install **2** apps, Starter **5**, Pro **20** and Business **50**. Details: `services/integrations/docs/app-directory.md`.
+
+## Can I get reports emailed on a schedule?
+
+Yes, on Starter and above. Owners and Admins can schedule daily, weekly or monthly reports as PDF, CSV or XLSX. Details: `services/analytics/docs/scheduled-reports-and-exports.md`.
+
+## Where can I see past incidents?
+
+Current and past incidents are shown on `https://status.acme-cloud.example`. Internal postmortems are in `reports/incidents/`.
+
+Last reviewed: 2026-11-26

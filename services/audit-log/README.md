@@ -11,7 +11,8 @@ The Audit Log service keeps an immutable record of security-relevant actions in 
 - **Category** – one of **8** groups used for filtering: authentication, members, security, data, billing, integrations, account, audit.
 - **Actor** – who performed the action: a `user`, an `api_key`, the `system`, or `support` (always with a ticket ID like `SUP-48213`).
 - **Retention** – how long entries are kept: **90 days** on Pro, **1 year** on Business, **7 years** on Enterprise.
-- **Hash chain** – each entry stores the SHA-256 hash of the entry before it, so any change or removal can be detected.
+- **Hash chain** – each entry stores the SHA-256 hash of the entry before it, so any change or removal can be detected. There is one chain per account per region.
+- **Checkpoint** – the latest hash of each chain, written once a day to write-once storage.
 - **Export** – a CSV or JSON Lines file of entries for a date range; IDs look like `exp_3M7Q1Z8K`.
 - **Stream** – continuous delivery of new entries to a SIEM; IDs look like `strm_6C2X9R4B`. Business and Enterprise only.
 

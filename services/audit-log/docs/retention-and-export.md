@@ -16,7 +16,7 @@ These match the plan table in `services/accounts/docs/plans-and-limits.md`. Rete
 
 They are permanently deleted by a purge job that runs once a day at **02:00 UTC**. Deleted entries cannot be recovered by the customer or by support. To keep entries for longer than the plan allows, export them or stream them to a SIEM before they expire.
 
-Entries are always purged oldest first. The hash of the last purged entry is kept as a checkpoint so the remaining entries can still be verified; see `services/audit-log/docs/access-and-integrity.md`.
+Entries are always purged oldest first. A checkpoint hash is kept as the new starting point so the remaining entries can still be verified; see `services/audit-log/docs/access-and-integrity.md`.
 
 ## What happens to the audit log when I upgrade?
 
@@ -33,7 +33,7 @@ Downgrades take effect at the end of the billing period, as described in `servic
 
 ## What happens to the audit log when an account is closed?
 
-Closing the account is recorded as `account.closed`. The log is kept during the **30-day** data retention window so it is still there if the account is restored, and is deleted with the rest of the account's data after that.
+Closing the account is recorded as `account.closed`. The log is kept during the **30-day** data retention window so it is still there if the account is restored, and is deleted with the rest of the account's data after that, when the account reaches the `deleted` state.
 
 ## Can retention be paused for a legal hold?
 
@@ -44,7 +44,7 @@ Yes, on **Enterprise only**. The Owner asks the Customer Success Manager or `sup
 Owners and Admins go to **Settings → Security → Audit log → Export**, choose a date range, optional filters (category, event type, actor) and a format:
 
 - **CSV** – one row per entry, for spreadsheets.
-- **JSON Lines** – one JSON object per line, including the hash chain fields, for scripts and SIEM import.
+- **JSON Lines** – one JSON object per line, including the hash chain fields and the daily checkpoints, for scripts and SIEM import.
 
 The export runs in the background. An email with a download link is sent when it is ready, usually within **30 minutes**.
 
@@ -59,6 +59,6 @@ Every export is recorded as `audit_log.exported` with the person who requested i
 
 ## Can I export the audit log through the API?
 
-Yes. Start an export with `POST /v2/audit-log/{account_id}/exports` and poll `GET /v2/audit-log/{account_id}/exports/{export_id}` until its status is `ready`. To read entries directly instead, page through `GET /v2/audit-log/{account_id}/entries`, which returns **100 entries** per page by default and at most **1,000**.
+Yes. Start an export with `POST /v2/audit-log/{account_id}/exports` and poll `GET /v2/audit-log/{account_id}/exports/{export_id}` until its status is `ready`. To read entries directly instead, page through `GET /v2/audit-log/{account_id}/entries`, which returns **50 entries** per page by default and at most **200**.
 
 Last reviewed: 2026-11-26

@@ -1,11 +1,11 @@
 """SHA-256 hash chain over audit entries, and tamper verification.
 
-Every entry stored in an account's log carries a ``sequence`` number, the
+There is one chain per account per region. Every entry in a chain carries a ``sequence`` number, the
 hash of the entry before it (``prev_hash``) and its own ``hash``::
 
     hash = SHA-256(prev_hash + "\\n" + sequence + "\\n" + canonical JSON of the entry)
 
-The first entry of an account uses :data:`GENESIS_HASH` (64 zeros) as its
+The first entry of a chain uses :data:`GENESIS_HASH` (64 zeros) as its
 ``prev_hash``. Changing, removing or reordering any entry breaks every
 hash after it, which :func:`verify_chain` detects.
 
@@ -69,7 +69,7 @@ def compute_hash(prev_hash: str, sequence: int, entry: AuditEntry) -> str:
 
 
 class HashChain:
-    """Append-only, in-memory chain for one account.
+    """Append-only, in-memory chain for one account in one region.
 
     There is deliberately no method to update or delete an entry.
     """
@@ -95,8 +95,10 @@ class HashChain:
     def append(self, entry: AuditEntry) -> ChainedEntry:
         """Validate ``entry``, link it to the head and return the result."""
         validate_entry(entry)
-        if self._entries and entry.account_id != self._entries[0].entry.account_id:
-            raise ValueError("a chain holds entries of exactly one account")
+        if self._entries:
+            first = self._entries[0].entry
+            if (entry.account_id, entry.region) != (first.account_id, first.region):
+                raise ValueError("a chain holds entries of one account in one region")
         prev_hash = self.head
         sequence = self._next_sequence
         chained = ChainedEntry(entry, sequence, prev_hash, compute_hash(prev_hash, sequence, entry))

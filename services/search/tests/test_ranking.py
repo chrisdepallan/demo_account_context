@@ -102,7 +102,7 @@ class RankTests(unittest.TestCase):
         docs = [make_doc(f"tsk_{i:08d}", "Budget") for i in range(MAX_PAGE_SIZE + 20)]
         self.assertEqual(len(rank(parse_query("budget"), docs, NOW, limit=500)), MAX_PAGE_SIZE)
         self.assertEqual(len(rank(parse_query("budget"), docs, NOW, limit=0)), 1)
-        self.assertEqual(len(rank(parse_query("budget"), docs, NOW)), 25)
+        self.assertEqual(len(rank(parse_query("budget"), docs, NOW)), 50)
 
 
 if __name__ == "__main__":

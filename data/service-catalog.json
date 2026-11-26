@@ -1,0 +1,255 @@
+[
+  {
+    "name": "accounts",
+    "title": "Accounts",
+    "team": "Accounts Platform",
+    "slack_channel": "#team-accounts",
+    "tier": 1,
+    "availability_objective_pct": 99.995,
+    "readme": "services/accounts/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/accounts",
+    "operations": [
+      "GET /v2/accounts/{account_id}",
+      "POST /v2/accounts/{account_id}/close",
+      "POST /v2/accounts/{account_id}/restore",
+      "GET /v2/accounts/{account_id}/members",
+      "POST /v2/accounts/{account_id}/members",
+      "DELETE /v2/accounts/{account_id}/members/{user_id}",
+      "GET /v2/accounts/{account_id}/workspaces",
+      "POST /v2/accounts/{account_id}/workspaces",
+      "POST /v2/accounts/{account_id}/workspaces/{workspace_id}/exports",
+      "GET /v2/accounts/{account_id}/workspaces/{workspace_id}/exports/{export_id}"
+    ]
+  },
+  {
+    "name": "auth",
+    "title": "Auth",
+    "team": "Identity",
+    "slack_channel": "#team-identity",
+    "tier": 1,
+    "availability_objective_pct": 99.995,
+    "readme": "services/auth/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/auth",
+    "operations": [
+      "POST /v2/auth/login",
+      "POST /v2/auth/logout",
+      "GET /v2/auth/sessions",
+      "DELETE /v2/auth/sessions/{session_id}",
+      "POST /v2/auth/password-reset",
+      "GET /v2/auth/api-keys",
+      "POST /v2/auth/api-keys",
+      "POST /v2/auth/api-keys/{key_id}/rotate",
+      "DELETE /v2/auth/api-keys/{key_id}"
+    ]
+  },
+  {
+    "name": "billing",
+    "title": "Billing",
+    "team": "Revenue Engineering",
+    "slack_channel": "#team-billing",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/billing/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/billing",
+    "operations": [
+      "GET /v2/billing/{account_id}/subscription",
+      "PATCH /v2/billing/{account_id}/subscription",
+      "POST /v2/billing/{account_id}/subscription/preview",
+      "GET /v2/billing/{account_id}/invoices",
+      "GET /v2/billing/{account_id}/invoices/{invoice_id}",
+      "POST /v2/billing/{account_id}/refunds",
+      "GET /v2/billing/{account_id}/credits",
+      "POST /v2/billing/{account_id}/credits",
+      "GET /v2/billing/{account_id}/payment-status"
+    ]
+  },
+  {
+    "name": "support",
+    "title": "Support",
+    "team": "Customer Support",
+    "slack_channel": "#support-escalations",
+    "tier": 3,
+    "availability_objective_pct": 99.9,
+    "readme": "services/support/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/support",
+    "operations": [
+      "GET /v2/support/tickets",
+      "POST /v2/support/tickets",
+      "GET /v2/support/tickets/{ticket_id}",
+      "PATCH /v2/support/tickets/{ticket_id}",
+      "POST /v2/support/tickets/{ticket_id}/replies",
+      "POST /v2/support/tickets/{ticket_id}/escalate",
+      "POST /v2/support/tickets/{ticket_id}/reopen",
+      "GET /v2/support/tickets/{ticket_id}/sla",
+      "GET /v2/support/macros"
+    ]
+  },
+  {
+    "name": "projects",
+    "title": "Projects",
+    "team": "Work Management",
+    "slack_channel": "#team-projects",
+    "tier": 1,
+    "availability_objective_pct": 99.995,
+    "readme": "services/projects/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/projects",
+    "operations": [
+      "GET /v2/projects/{workspace_id}/projects",
+      "POST /v2/projects/{workspace_id}/projects",
+      "GET /v2/projects/{workspace_id}/projects/{project_id}",
+      "PATCH /v2/projects/{workspace_id}/projects/{project_id}",
+      "DELETE /v2/projects/{workspace_id}/projects/{project_id}",
+      "GET /v2/projects/{workspace_id}/projects/{project_id}/tasks",
+      "POST /v2/projects/{workspace_id}/projects/{project_id}/tasks",
+      "PATCH /v2/projects/{workspace_id}/tasks/{task_id}",
+      "POST /v2/projects/{workspace_id}/tasks/{task_id}/comments"
+    ]
+  },
+  {
+    "name": "files",
+    "title": "Files",
+    "team": "Storage Platform",
+    "slack_channel": "#team-storage",
+    "tier": 1,
+    "availability_objective_pct": 99.995,
+    "readme": "services/files/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/files",
+    "operations": [
+      "GET /v2/files/{workspace_id}/files",
+      "POST /v2/files/{workspace_id}/uploads",
+      "POST /v2/files/{workspace_id}/uploads/{upload_id}/complete",
+      "GET /v2/files/{workspace_id}/files/{file_id}",
+      "DELETE /v2/files/{workspace_id}/files/{file_id}",
+      "POST /v2/files/{workspace_id}/files/{file_id}/restore",
+      "GET /v2/files/{workspace_id}/files/{file_id}/versions",
+      "POST /v2/files/{workspace_id}/files/{file_id}/share-links",
+      "GET /v2/files/{workspace_id}/usage"
+    ]
+  },
+  {
+    "name": "notifications",
+    "title": "Notifications",
+    "team": "Messaging",
+    "slack_channel": "#team-notifications",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/notifications/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/notifications",
+    "operations": [
+      "GET /v2/notifications/{account_id}/inbox",
+      "POST /v2/notifications/{account_id}/inbox/{notification_id}/read",
+      "POST /v2/notifications/{account_id}/inbox/read-all",
+      "GET /v2/notifications/{account_id}/preferences",
+      "PUT /v2/notifications/{account_id}/preferences",
+      "GET /v2/notifications/{account_id}/workspaces/{workspace_id}/defaults",
+      "PUT /v2/notifications/{account_id}/workspaces/{workspace_id}/defaults",
+      "POST /v2/notifications/{account_id}/send",
+      "GET /v2/notifications/{account_id}/suppressions"
+    ]
+  },
+  {
+    "name": "webhooks",
+    "title": "Webhooks",
+    "team": "Developer Platform",
+    "slack_channel": "#team-developer-platform",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/webhooks/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/webhooks",
+    "operations": [
+      "GET /v2/webhooks/event-types",
+      "GET /v2/webhooks/{workspace_id}/endpoints",
+      "POST /v2/webhooks/{workspace_id}/endpoints",
+      "GET /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}",
+      "PATCH /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}",
+      "DELETE /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}",
+      "POST /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/rotate-secret",
+      "POST /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/test",
+      "GET /v2/webhooks/{workspace_id}/endpoints/{endpoint_id}/deliveries",
+      "POST /v2/webhooks/{workspace_id}/deliveries/{delivery_id}/redeliver"
+    ]
+  },
+  {
+    "name": "search",
+    "title": "Search",
+    "team": "Search and Discovery",
+    "slack_channel": "#team-search",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/search/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/search",
+    "operations": [
+      "GET /v2/search/{workspace_id}/query",
+      "GET /v2/search/{workspace_id}/suggest",
+      "GET /v2/search/{workspace_id}/saved-searches",
+      "POST /v2/search/{workspace_id}/saved-searches",
+      "DELETE /v2/search/{workspace_id}/saved-searches/{saved_search_id}",
+      "GET /v2/search/{workspace_id}/index-status",
+      "POST /v2/search/{workspace_id}/reindex"
+    ]
+  },
+  {
+    "name": "audit-log",
+    "title": "Audit Log",
+    "team": "Trust and Compliance",
+    "slack_channel": "#team-trust",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/audit-log/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/audit-log",
+    "operations": [
+      "GET /v2/audit-log/{account_id}/entries",
+      "GET /v2/audit-log/{account_id}/entries/{entry_id}",
+      "POST /v2/audit-log/{account_id}/exports",
+      "GET /v2/audit-log/{account_id}/exports/{export_id}",
+      "GET /v2/audit-log/{account_id}/streams",
+      "POST /v2/audit-log/{account_id}/streams",
+      "DELETE /v2/audit-log/{account_id}/streams/{stream_id}",
+      "POST /v2/audit-log/{account_id}/verify",
+      "GET /v2/audit-log/{account_id}/retention"
+    ]
+  },
+  {
+    "name": "integrations",
+    "title": "Integrations",
+    "team": "Ecosystem",
+    "slack_channel": "#team-ecosystem",
+    "tier": 2,
+    "availability_objective_pct": 99.95,
+    "readme": "services/integrations/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/integrations",
+    "operations": [
+      "GET /v2/integrations/apps",
+      "GET /v2/integrations/apps/{app_slug}",
+      "GET /v2/integrations/{workspace_id}/installs",
+      "POST /v2/integrations/{workspace_id}/installs",
+      "GET /v2/integrations/{workspace_id}/installs/{integration_id}",
+      "PATCH /v2/integrations/{workspace_id}/installs/{integration_id}",
+      "DELETE /v2/integrations/{workspace_id}/installs/{integration_id}",
+      "GET /v2/integrations/{workspace_id}/installs/{integration_id}/sync",
+      "POST /v2/integrations/{workspace_id}/installs/{integration_id}/sync"
+    ]
+  },
+  {
+    "name": "analytics",
+    "title": "Analytics",
+    "team": "Data Platform",
+    "slack_channel": "#team-data",
+    "tier": 3,
+    "availability_objective_pct": 99.9,
+    "readme": "services/analytics/README.md",
+    "api_base": "https://api.acme-cloud.example/v2/analytics",
+    "operations": [
+      "GET /v2/analytics/{workspace_id}/metrics",
+      "GET /v2/analytics/{workspace_id}/dashboards",
+      "POST /v2/analytics/{workspace_id}/dashboards",
+      "GET /v2/analytics/{workspace_id}/dashboards/{dashboard_id}",
+      "DELETE /v2/analytics/{workspace_id}/dashboards/{dashboard_id}",
+      "GET /v2/analytics/{workspace_id}/reports/schedules",
+      "POST /v2/analytics/{workspace_id}/reports/schedules",
+      "DELETE /v2/analytics/{workspace_id}/reports/schedules/{schedule_id}",
+      "POST /v2/analytics/{workspace_id}/exports",
+      "GET /v2/analytics/{workspace_id}/exports/{export_id}"
+    ]
+  }
+]

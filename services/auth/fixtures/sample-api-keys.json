@@ -1,0 +1,86 @@
+[
+  {
+    "key_id": "key_9V48N7E2",
+    "account_id": "acc_BVJTUMLH",
+    "prefix": "acme_live_",
+    "scopes": [
+      "files:write"
+    ],
+    "created_at": "2025-11-28",
+    "last_used_at": "2026-11-05"
+  },
+  {
+    "key_id": "key_ERSYTM2U",
+    "account_id": "acc_43HH8WNQ",
+    "prefix": "acme_test_",
+    "scopes": [
+      "files:read"
+    ],
+    "created_at": "2026-08-28",
+    "last_used_at": "2026-11-05"
+  },
+  {
+    "key_id": "key_ZXAK5T5C",
+    "account_id": "acc_BVJTUMLH",
+    "prefix": "acme_live_",
+    "scopes": [
+      "members:read"
+    ],
+    "created_at": "2026-02-22",
+    "last_used_at": "2026-11-13"
+  },
+  {
+    "key_id": "key_V6GRMSPA",
+    "account_id": "acc_L28CDH2C",
+    "prefix": "acme_test_",
+    "scopes": [
+      "billing:read",
+      "projects:read"
+    ],
+    "created_at": "2025-12-03",
+    "last_used_at": "2026-11-11"
+  },
+  {
+    "key_id": "key_9DE5T43F",
+    "account_id": "acc_QDBVLD3E",
+    "prefix": "acme_live_",
+    "scopes": [
+      "projects:read"
+    ],
+    "created_at": "2025-11-13",
+    "last_used_at": "2026-10-30"
+  },
+  {
+    "key_id": "key_ZQ5SGSQ2",
+    "account_id": "acc_KUGPVP7S",
+    "prefix": "acme_live_",
+    "scopes": [
+      "files:read"
+    ],
+    "created_at": "2026-08-26",
+    "last_used_at": "2026-11-12"
+  },
+  {
+    "key_id": "key_J2E36VC2",
+    "account_id": "acc_EZSV5HNE",
+    "prefix": "acme_live_",
+    "scopes": [
+      "billing:read",
+      "members:read",
+      "projects:write"
+    ],
+    "created_at": "2026-09-21",
+    "last_used_at": "2026-11-05"
+  },
+  {
+    "key_id": "key_39ER57RL",
+    "account_id": "acc_SUPKUCRZ",
+    "prefix": "acme_live_",
+    "scopes": [
+      "files:read",
+      "projects:write"
+    ],
+    "created_at": "2026-01-31",
+    "last_used_at": "2026-11-07"
+  }
+]

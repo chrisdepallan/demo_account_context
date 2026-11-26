@@ -11,7 +11,8 @@ service:
   default_region: us-east
 
 recording:
-  max_write_delay_seconds: 60        # an action must be visible within 60 s
+  write_slo_seconds: 10              # 99% of entries written within 10 s of the event
+  write_slo_percent: 99
   metadata_max_keys: 20
   metadata_max_bytes: 4096
   # Metadata keys containing these words are rejected before writing.
@@ -35,12 +36,14 @@ retention:
 integrity:
   hash_algorithm: sha256
   genesis_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+  chain_scope: account_and_region  # one chain per account per region
+  checkpoint_schedule_utc: "00:30" # daily, to write-once object storage
   keep_checkpoint_on_purge: true
   verify_max_entries: 100000
 
 api:
-  default_page_size: 100
-  max_page_size: 1000
+  default_page_size: 50
+  max_page_size: 200
   required_scope: members:read
   request_timeout_ms: 10000
 

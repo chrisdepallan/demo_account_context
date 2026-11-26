@@ -41,10 +41,13 @@ def candidates(path: Path, text: str) -> list[tuple[str, Path]]:
         for span in CODE_SPAN.findall(line):
             if any(ch in span for ch in " *<>{}$") or "://" in span or not span.endswith(EXTENSIONS):
                 continue
-            if span.startswith(TOP_LEVEL) or span in ("README.md", "CONTRIBUTING.md", "pyproject.toml"):
-                found.append((span, ROOT / span))
-            elif path.name == "README.md" and "/" in span and not span.startswith("/"):
+            in_service = path.name == "README.md" and path.parent.parent.name == "services"
+            if in_service and "/" in span and (path.parent / span).exists():
                 # Service READMEs use paths relative to the service folder.
+                found.append((span, path.parent / span))
+            elif span.startswith(TOP_LEVEL) or span in ("README.md", "CONTRIBUTING.md", "pyproject.toml"):
+                found.append((span, ROOT / span))
+            elif in_service and "/" in span and not span.startswith("/"):
                 found.append((span, path.parent / span))
     return found
 

@@ -1,0 +1,82 @@
+[
+  {
+    "account_id": "acc_43HH8WNQ",
+    "plan": "starter",
+    "billing_cycle": "monthly",
+    "seats": 78,
+    "currency": "USD",
+    "status": "active",
+    "payment_method": "pm_2ZLQQF",
+    "current_period_end": "2027-09-01"
+  },
+  {
+    "account_id": "acc_L28CDH2C",
+    "plan": "starter",
+    "billing_cycle": "annual",
+    "seats": 71,
+    "currency": "INR",
+    "status": "active",
+    "payment_method": "pm_9RH7FH",
+    "current_period_end": "2026-12-31"
+  },
+  {
+    "account_id": "acc_74PZVY73",
+    "plan": "starter",
+    "billing_cycle": "annual",
+    "seats": 76,
+    "currency": "GBP",
+    "status": "cancelled",
+    "payment_method": "pm_FNRERD",
+    "current_period_end": "2027-04-30"
+  },
+  {
+    "account_id": "acc_QDBVLD3E",
+    "plan": "business",
+    "billing_cycle": "monthly",
+    "seats": 63,
+    "currency": "GBP",
+    "status": "active",
+    "payment_method": "pm_2WEVKG",
+    "current_period_end": "2027-08-07"
+  },
+  {
+    "account_id": "acc_KUGPVP7S",
+    "plan": "pro",
+    "billing_cycle": "monthly",
+    "seats": 48,
+    "currency": "INR",
+    "status": "cancelled",
+    "payment_method": "pm_DBXJG6",
+    "current_period_end": "2027-03-16"
+  },
+  {
+    "account_id": "acc_SUPKUCRZ",
+    "plan": "business",
+    "billing_cycle": "annual",
+    "seats": 43,
+    "currency": "EUR",
+    "status": "active",
+    "payment_method": "pm_ASY68P",
+    "current_period_end": "2027-08-29"
+  },
+  {
+    "account_id": "acc_BVJTUMLH",
+    "plan": "starter",
+    "billing_cycle": "annual",
+    "seats": 41,
+    "currency": "INR",
+    "status": "active",
+    "payment_method": "pm_D8PVSZ",
+    "current_period_end": "2027-01-03"
+  },
+  {
+    "account_id": "acc_EZSV5HNE",
+    "plan": "starter",
+    "billing_cycle": "annual",
+    "seats": 12,
+    "currency": "INR",
+    "status": "active",
+    "payment_method": "pm_EETBJF",
+    "current_period_end": "2026-12-20"
+  }
+]

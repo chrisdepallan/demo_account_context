@@ -1,0 +1,82 @@
+[
+  {
+    "notification_id": "ntf_NYL3ERUHFS",
+    "account_id": "acc_QDBVLD3E",
+    "channel": "in_app",
+    "type": "comment_added",
+    "status": "sent",
+    "created_at": "2026-11-18T18:13:00Z"
+  },
+  {
+    "notification_id": "ntf_EUXY56YKGJ",
+    "account_id": "acc_43HH8WNQ",
+    "channel": "email",
+    "type": "mention",
+    "status": "sent",
+    "created_at": "2026-11-21T11:06:00Z"
+  },
+  {
+    "notification_id": "ntf_2XLYWYRS5P",
+    "account_id": "acc_SUPKUCRZ",
+    "channel": "push",
+    "type": "file_shared",
+    "status": "bounced",
+    "created_at": "2026-10-12T08:03:00Z"
+  },
+  {
+    "notification_id": "ntf_4LHSUMKYK5",
+    "account_id": "acc_EZSV5HNE",
+    "channel": "in_app",
+    "type": "mention",
+    "status": "bounced",
+    "created_at": "2026-11-05T23:06:00Z"
+  },
+  {
+    "notification_id": "ntf_97LHFHECT5",
+    "account_id": "acc_L28CDH2C",
+    "channel": "email",
+    "type": "task_completed",
+    "status": "bounced",
+    "created_at": "2026-11-15T03:33:00Z"
+  },
+  {
+    "notification_id": "ntf_Z6C3VH5FRJ",
+    "account_id": "acc_KUGPVP7S",
+    "channel": "push",
+    "type": "task_due_soon",
+    "status": "sent",
+    "created_at": "2026-10-18T14:49:00Z"
+  },
+  {
+    "notification_id": "ntf_8ATEBR8X7Y",
+    "account_id": "acc_74PZVY73",
+    "channel": "push",
+    "type": "task_completed",
+    "status": "sent",
+    "created_at": "2026-10-07T04:20:00Z"
+  },
+  {
+    "notification_id": "ntf_CYMZMCVQ7L",
+    "account_id": "acc_KUGPVP7S",
+    "channel": "email",
+    "type": "comment_added",
+    "status": "sent",
+    "created_at": "2026-10-05T03:21:00Z"
+  },
+  {
+    "notification_id": "ntf_6PAA3QVWGD",
+    "account_id": "acc_43HH8WNQ",
+    "channel": "email",
+    "type": "mention",
+    "status": "sent",
+    "created_at": "2026-11-14T17:59:00Z"
+  },
+  {
+    "notification_id": "ntf_JCVR2RPZH7",
+    "account_id": "acc_BVJTUMLH",
+    "channel": "push",
+    "type": "billing_alert",
+    "status": "bounced",
+    "created_at": "2026-11-07T04:43:00Z"
+  }
+]

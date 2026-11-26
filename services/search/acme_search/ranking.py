@@ -32,8 +32,8 @@ PHRASE_BOOST = 2.0
 TF_SATURATION = 1.2
 RECENCY_HALF_LIFE_DAYS = 30.0
 RECENCY_FLOOR = 0.5
-DEFAULT_PAGE_SIZE = 25
-MAX_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 50
+MAX_PAGE_SIZE = 200
 
 
 @dataclass(frozen=True)
@@ -144,7 +144,7 @@ def rank(
     """Return matching documents, best first.
 
     Ties are broken by most recently updated, then by ID so that the
-    order is stable between pages. ``limit`` is clamped to 1–100.
+    order is stable between pages. ``limit`` is clamped to 1–200.
     """
     limit = max(1, min(int(limit), MAX_PAGE_SIZE))
     now = now or datetime.now(timezone.utc)

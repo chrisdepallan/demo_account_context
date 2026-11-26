@@ -31,20 +31,21 @@ Entries can be filtered by:
 - workspace
 - IP address
 
-Filters can be combined. The view shows **100 entries** per page, newest first.
+Filters can be combined. The view shows **50 entries** per page, newest first.
 
 ## Can I read the audit log through the API?
 
-Yes, on Pro and above. Use `GET /v2/audit-log/{account_id}/entries` with an API key that has the `members:read` scope. Only Owners and Admins can create API keys, so the same people control API access to the log. A page returns **100 entries** by default and at most **1,000**; requests count against the account's API rate limit.
+Yes, on Pro and above. Use `GET /v2/audit-log/{account_id}/entries` with an API key that has the `members:read` scope. Only Owners and Admins can create API keys, so the same people control API access to the log. Narrow the time range with `occurred_after` and `occurred_before`. A page returns **50 entries** by default and at most **200**; requests count against the account's API rate limit.
 
 ## How does Acme Cloud prove that entries were not tampered with?
 
-Every entry is linked to the one before it in a **hash chain**:
+Every entry is linked to the one before it in a **hash chain**. There is one chain per account per region, so no chain crosses a region:
 
-- Each entry has a `sequence` number, starting at **1** for the account and increasing by one.
+- Each entry has a `sequence` number, starting at **1** for the chain and increasing by one.
 - Each entry stores `prev_hash`, the hash of the previous entry, and its own `hash`.
 - The hash is **SHA-256** over the previous hash, the sequence number and the entry's content in a fixed JSON form.
-- The first entry of an account uses a `prev_hash` of **64 zeros**.
+- The first entry of a chain uses a `prev_hash` of **64 zeros**.
+- **Once a day** the latest hash of each chain is written as a checkpoint to write-once storage in the same region, so rewriting a whole chain would also be detected.
 
 If any entry were changed, removed or reordered, its hash and every hash after it would no longer match.
 
@@ -59,10 +60,10 @@ A failed check is treated as a security incident: contact `support@acme-cloud.ex
 
 ## What does verification look like after old entries are purged?
 
-When entries pass the retention window they are purged oldest first, so the log always remains one continuous run of entries. The hash of the last purged entry is kept as a **checkpoint**. Verification of the remaining entries starts from that checkpoint instead of from the 64 zeros.
+When entries pass the retention window they are purged oldest first, so the log always remains one continuous run of entries. The hash of the last purged entry is kept as a **checkpoint**. Verification of the remaining entries starts from that checkpoint instead of from the 64 zeros. The background to this design is in `docs/adr/0009-hash-chained-audit-log.md`.
 
 ## Where are audit log entries stored?
 
-Entries about a workspace are stored in that workspace's region: `us-east`, `eu-central` or `ap-south`. Account-level entries, such as `invoice.paid` or `ownership.transferred`, are stored in the region of the account's oldest workspace. Entries are encrypted at rest and are not copied to other regions.
+Entries about a workspace are stored in that workspace's region: `us-east`, `eu-central` or `ap-south`. Account-level entries, such as `invoice.paid` or `ownership.transferred`, are stored in the account's home region, which is the region of its first workspace. Entries are encrypted at rest and are not copied to other regions.
 
 Last reviewed: 2026-11-26

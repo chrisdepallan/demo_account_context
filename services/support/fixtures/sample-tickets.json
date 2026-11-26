@@ -1,0 +1,112 @@
+[
+  {
+    "ticket_id": "SUP-55492",
+    "account_id": "acc_EZSV5HNE",
+    "plan": "enterprise",
+    "priority": "P2",
+    "channel": "chat",
+    "status": "pending",
+    "subject": "Charged after cancelling",
+    "opened_at": "2026-10-08T20:18:00Z",
+    "first_response_minutes": 516
+  },
+  {
+    "ticket_id": "SUP-59381",
+    "account_id": "acc_43HH8WNQ",
+    "plan": "free",
+    "priority": "P4",
+    "channel": "chat",
+    "status": "solved",
+    "subject": "How do I export my data?",
+    "opened_at": "2026-11-14T05:02:00Z",
+    "first_response_minutes": 309
+  },
+  {
+    "ticket_id": "SUP-55132",
+    "account_id": "acc_43HH8WNQ",
+    "plan": "starter",
+    "priority": "P2",
+    "channel": "email",
+    "status": "closed",
+    "subject": "Dashboard numbers look out of date",
+    "opened_at": "2026-11-04T21:31:00Z",
+    "first_response_minutes": 193
+  },
+  {
+    "ticket_id": "SUP-50090",
+    "account_id": "acc_QDBVLD3E",
+    "plan": "free",
+    "priority": "P1",
+    "channel": "phone",
+    "status": "open",
+    "subject": "Webhook deliveries are failing",
+    "opened_at": "2026-10-19T12:07:00Z",
+    "first_response_minutes": 476
+  },
+  {
+    "ticket_id": "SUP-58461",
+    "account_id": "acc_EZSV5HNE",
+    "plan": "business",
+    "priority": "P2",
+    "channel": "chat",
+    "status": "open",
+    "subject": "Webhook deliveries are failing",
+    "opened_at": "2026-11-21T10:21:00Z",
+    "first_response_minutes": 528
+  },
+  {
+    "ticket_id": "SUP-57705",
+    "account_id": "acc_L28CDH2C",
+    "plan": "enterprise",
+    "priority": "P4",
+    "channel": "phone",
+    "status": "open",
+    "subject": "Upload fails for a large file",
+    "opened_at": "2026-11-16T00:31:00Z",
+    "first_response_minutes": 71
+  },
+  {
+    "ticket_id": "SUP-59487",
+    "account_id": "acc_EZSV5HNE",
+    "plan": "pro",
+    "priority": "P4",
+    "channel": "chat",
+    "status": "closed",
+    "subject": "Upload fails for a large file",
+    "opened_at": "2026-11-13T16:35:00Z",
+    "first_response_minutes": 596
+  },
+  {
+    "ticket_id": "SUP-56180",
+    "account_id": "acc_43HH8WNQ",
+    "plan": "starter",
+    "priority": "P1",
+    "channel": "phone",
+    "status": "pending",
+    "subject": "Need to change the account Owner",
+    "opened_at": "2026-10-28T02:23:00Z",
+    "first_response_minutes": 162
+  },
+  {
+    "ticket_id": "SUP-53377",
+    "account_id": "acc_EZSV5HNE",
+    "plan": "enterprise",
+    "priority": "P2",
+    "channel": "email",
+    "status": "open",
+    "subject": "How do I export my data?",
+    "opened_at": "2026-11-11T00:00:00Z",
+    "first_response_minutes": 88
+  },
+  {
+    "ticket_id": "SUP-54110",
+    "account_id": "acc_EZSV5HNE",
+    "plan": "free",
+    "priority": "P1",
+    "channel": "email",
+    "status": "solved",
+    "subject": "Charged after cancelling",
+    "opened_at": "2026-09-30T12:04:00Z",
+    "first_response_minutes": 233
+  }
+]

@@ -49,15 +49,15 @@ Add `in:title`. Without it, search looks at titles and content. `in:content` doe
 
 ## How are results sorted?
 
-By default results are sorted by **relevance**, best match first. In the app, use the **Sort** menu above the results; in the API, use the `sort` and `order` parameters.
+By default results are sorted by **relevance**, best match first. In the app, use the **Sort** menu above the results; in the API, use the `sort` parameter. A leading minus sign means descending order, for example `sort=-updated_at`.
 
-| Sort | Meaning | Default order |
-|------|---------|---------------|
-| `relevance` | Best match first (default) | `desc` only |
-| `updated_at` | Last change | `desc` |
-| `created_at` | Creation date | `desc` |
-| `title` | Alphabetical by title | `asc` |
-| `due_date` | Task due date; items without one come last | `asc` |
+| `sort` value | Meaning |
+|--------------|---------|
+| `relevance` | Best match first (default) |
+| `-updated_at` / `updated_at` | Most / least recently changed first |
+| `-created_at` / `created_at` | Newest / oldest first |
+| `title` / `-title` | Alphabetical by title, A–Z / Z–A |
+| `due_date` / `-due_date` | Earliest / latest task due date first; items without one come last |
 
 A query that has only filters and no words, such as `type:file ext:pdf`, has no relevance to compute, so it is returned most recently updated first.
 
